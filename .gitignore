@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+models/
+*.db
+.env
+.env.local
+venv/
+.venv/
+*.joblib
+*.pkl
+node_modules/
