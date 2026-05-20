@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.cache import cache_get, cache_invalidate, cache_set
 from app.database import get_db, init_db
 from app.features import FEATURE_COLUMNS, prepare_features
 from app.model import get_metrics, predict, train_models
@@ -186,11 +187,15 @@ async def predict_weather(
     summary="Retrieve model training metrics",
 )
 async def metrics() -> MetricsResponse:
-    """Return the latest model training CV metrics."""
+    """Return the latest model training CV metrics (cached 5 min)."""
+    cached = cache_get("model_metrics")
+    if cached:
+        return MetricsResponse(**{k: v for k, v in cached.items() if k in MetricsResponse.model_fields})
     try:
         m = get_metrics()
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Could not load metrics") from exc
+    cache_set("model_metrics", m, ttl=300)
     return MetricsResponse(**{k: v for k, v in m.items() if k in MetricsResponse.model_fields})
 
 
@@ -233,6 +238,7 @@ async def retrain() -> dict[str, Any]:
         metrics_result = train_models()
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Retraining failed") from exc
+    cache_invalidate("model_metrics")
     return {"status": "retrained", **metrics_result}
 
 
