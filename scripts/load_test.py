@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import concurrent.futures
+import json
 import statistics
 import time
 import urllib.request
-import json
 
 BASE_URL = "http://localhost:8000"
 
