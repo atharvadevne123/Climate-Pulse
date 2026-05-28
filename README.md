@@ -16,7 +16,7 @@ Climate-Pulse is a production-ready ML system that predicts next-step temperatur
 
 ### Key Capabilities
 
-- **7 REST endpoints** under `/api/v1/` for prediction, drift monitoring, retraining, and observability
+- **10 REST endpoints** under `/api/v1/` for prediction, drift monitoring, retraining, and observability
 - **XGBoost + LightGBM + RandomForest ensemble** for temperature, precipitation, and extreme-event classification
 - **5-stage feature pipeline**: lag features (3 steps), rolling stats (3/7/14 windows), atmospheric ratios (humidity-pressure ratio, wind chill), seasonal sine/cosine encoding, dew-point calculation
 - **5-fold cross-validation** with R² for regression targets and AUC-ROC for extreme event detection
@@ -111,6 +111,18 @@ Trigger model retraining on refreshed data; returns updated CV metrics.
 ### `GET /api/v1/predictions/recent?limit=20`
 
 Fetch recent prediction logs.
+
+### `GET /api/v1/drift/history?limit=20`
+
+Retrieve recent drift detection reports (feature name, KS statistic, p-value, drift flag).
+
+### `GET /api/v1/version`
+
+Returns `{"api_version": "1.0.0", "model_version": "1.0.0"}`.
+
+### `GET /api/v1/readyz`
+
+Kubernetes readiness probe — returns `{"status": "ready"}` when models are loaded.
 
 ---
 
