@@ -30,17 +30,41 @@ MODEL_VERSION = "1.0.0"
 
 
 class _EnsembleRegressor:
-    """Average-vote ensemble of three regressors — avoids sklearn tags API issues."""
+    """Average-prediction ensemble of heterogeneous regressors.
+
+    Averages predictions from all member estimators. Avoids sklearn's
+    VotingRegressor so there is no dependency on the evolving sklearn tags API.
+
+    Attributes:
+        estimators: List of fitted or unfitted sklearn-compatible regressors.
+    """
 
     def __init__(self, estimators: list) -> None:
         self.estimators = estimators
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> _EnsembleRegressor:
+        """Fit all member estimators on the same training data.
+
+        Args:
+            X: Training feature matrix.
+            y: Regression target vector.
+
+        Returns:
+            Self (fitted ensemble).
+        """
         for est in self.estimators:
             est.fit(X, y)
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict by averaging member estimator outputs.
+
+        Args:
+            X: Feature matrix for prediction.
+
+        Returns:
+            Averaged prediction array.
+        """
         preds = np.column_stack([est.predict(X) for est in self.estimators])
         return preds.mean(axis=1)
 
@@ -49,21 +73,50 @@ class _EnsembleRegressor:
 
 
 class _EnsembleClassifier:
-    """Soft-vote ensemble of three classifiers."""
+    """Soft-vote (probability-averaging) ensemble of heterogeneous classifiers.
+
+    Attributes:
+        estimators: List of sklearn-compatible classifiers with predict_proba support.
+    """
 
     def __init__(self, estimators: list) -> None:
         self.estimators = estimators
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> _EnsembleClassifier:
+        """Fit all member classifiers on the same training data.
+
+        Args:
+            X: Training feature matrix.
+            y: Binary class label vector.
+
+        Returns:
+            Self (fitted ensemble).
+        """
         for est in self.estimators:
             est.fit(X, y)
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
+        """Return hard class labels (threshold 0.5 on averaged probabilities).
+
+        Args:
+            X: Feature matrix for prediction.
+
+        Returns:
+            Binary class label array.
+        """
         proba = self.predict_proba(X)
         return (proba[:, 1] >= 0.5).astype(int)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """Return averaged class probabilities from all member classifiers.
+
+        Args:
+            X: Feature matrix for prediction.
+
+        Returns:
+            Probability matrix of shape (n_samples, 2).
+        """
         probas = np.stack([est.predict_proba(X) for est in self.estimators], axis=0)
         return probas.mean(axis=0)
 
