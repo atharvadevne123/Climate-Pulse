@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -140,8 +141,12 @@ class DewiPointTransformer(BaseEstimator, TransformerMixin):
         return X
 
 
+@lru_cache(maxsize=1)
 def build_feature_pipeline() -> Pipeline:
-    """Return the full 5-stage feature engineering + scaling pipeline."""
+    """Return the full 5-stage feature engineering + scaling pipeline.
+
+    Cached so repeated calls in training loops return the same object.
+    """
     return Pipeline(
         [
             ("lag_features", LagFeatureTransformer(lags=3)),
