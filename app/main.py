@@ -314,6 +314,7 @@ async def drift_history(
 async def model_freshness() -> dict[str, Any]:
     """Return the age in hours of each persisted model file."""
     import time
+
     from app.model import EXTREME_MODEL_PATH, PRECIP_MODEL_PATH, TEMP_MODEL_PATH
     now = time.time()
 

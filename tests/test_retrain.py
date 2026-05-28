@@ -1,8 +1,6 @@
 """Tests for the /api/v1/retrain endpoint and model retraining flow."""
 from __future__ import annotations
 
-import pytest
-
 
 class TestRetrainEndpoint:
     def test_retrain_returns_200(self, client):

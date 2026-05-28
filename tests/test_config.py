@@ -1,10 +1,6 @@
 """Tests for application settings."""
 from __future__ import annotations
 
-import os
-
-import pytest
-
 from app.config import Settings, get_settings
 
 
