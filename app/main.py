@@ -39,19 +39,24 @@ RATE_LIMIT = int(os.getenv("RATE_LIMIT_PER_MINUTE", "200"))
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    """Sliding-window rate limiter keyed by client IP address."""
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
         client_ip = request.client.host if request.client else "unknown"
         now = time.time()
         window = _request_counts.setdefault(client_ip, [])
         _request_counts[client_ip] = [t for t in window if now - t < 60]
         if len(_request_counts[client_ip]) >= RATE_LIMIT:
+            logger.warning("main.RateLimitMiddleware: rate limit exceeded ip=%s", client_ip)
             return Response(content="Rate limit exceeded", status_code=429)
         _request_counts[client_ip].append(now)
         return await call_next(request)
 
 
 class CorrelationIDMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    """Injects or propagates X-Correlation-ID header for request tracing."""
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
         corr_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
         request.state.correlation_id = corr_id
         response = await call_next(request)
