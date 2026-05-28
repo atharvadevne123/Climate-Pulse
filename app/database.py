@@ -11,10 +11,19 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./climate_pulse.db")
+_is_sqlite = DATABASE_URL.startswith("sqlite")
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
+    pool_pre_ping=True,
+    # Connection pool settings for PostgreSQL; ignored by SQLite
+    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
+    pool_timeout=int(os.getenv("DB_POOL_TIMEOUT", "30")),
+) if not _is_sqlite else create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False},
     pool_pre_ping=True,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
