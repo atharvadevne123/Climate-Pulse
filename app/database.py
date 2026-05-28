@@ -73,13 +73,59 @@ class WeatherObservation(Base):
 
 
 def init_db() -> None:
+    """Create all ORM tables if they do not already exist."""
     Base.metadata.create_all(bind=engine)
     logger.info("database.init_db: tables created")
 
 
 def get_db():
+    """Yield a SQLAlchemy session; close it after the request completes."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+def count_predictions(db) -> int:
+    """Return total number of persisted prediction log records.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Integer count of all rows in prediction_logs.
+    """
+    return db.query(PredictionLog).count()
+
+
+def count_drift_reports(db) -> int:
+    """Return total number of persisted drift report records.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Integer count of all rows in drift_reports.
+    """
+    return db.query(DriftReport).count()
+
+
+def get_predictions_by_station(db, station_id: str, limit: int = 100) -> list[PredictionLog]:
+    """Fetch prediction logs for a specific station, ordered newest-first.
+
+    Args:
+        db: Active SQLAlchemy session.
+        station_id: Station identifier to filter by.
+        limit: Maximum number of records (default 100).
+
+    Returns:
+        List of PredictionLog ORM instances.
+    """
+    return (
+        db.query(PredictionLog)
+        .filter(PredictionLog.station_id == station_id)
+        .order_by(PredictionLog.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
