@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.validators import is_valid_station_id, validate_feature_dict
+from app.validators import is_valid_station_id, validate_cross_field, validate_feature_dict
 
 VALID_PAYLOAD = {
     "temperature": 20.0,
@@ -88,3 +88,37 @@ class TestValidateFeatureDictEdgeCases:
         partial = {"temperature": 20.0, "humidity": 60.0}
         errors = validate_feature_dict(partial)
         assert any("missing" in e for e in errors)
+
+
+class TestValidateCrossField:
+    def test_normal_conditions_no_errors(self):
+        data = {"temperature": 25.0, "humidity": 60.0}
+        assert validate_cross_field(data) == []
+
+    def test_extreme_temp_very_low_humidity_flagged(self):
+        data = {"temperature": 50.0, "humidity": 2.0}
+        errors = validate_cross_field(data)
+        assert len(errors) > 0
+
+    def test_high_temp_normal_humidity_ok(self):
+        data = {"temperature": 40.0, "humidity": 20.0}
+        assert validate_cross_field(data) == []
+
+    def test_missing_fields_no_errors(self):
+        assert validate_cross_field({}) == []
+
+    def test_only_temperature_no_errors(self):
+        assert validate_cross_field({"temperature": 50.0}) == []
+
+    def test_only_humidity_no_errors(self):
+        assert validate_cross_field({"humidity": 2.0}) == []
+
+    @pytest.mark.parametrize("temp,humidity", [
+        (20.0, 60.0),
+        (35.0, 50.0),
+        (45.0, 10.0),
+        (44.9, 4.0),
+    ])
+    def test_valid_combinations_no_errors(self, temp, humidity):
+        data = {"temperature": temp, "humidity": humidity}
+        assert validate_cross_field(data) == []
