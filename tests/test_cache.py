@@ -69,3 +69,39 @@ class TestCacheSize:
         assert cache_size() == 1
         cache_set("b", 2)
         assert cache_size() == 2
+
+    def test_size_decreases_after_invalidate(self):
+        cache_set("x", 1)
+        cache_set("y", 2)
+        cache_invalidate("x")
+        assert cache_size() == 1
+
+    def test_size_zero_after_clear(self):
+        cache_set("p", 1)
+        cache_set("q", 2)
+        cache_clear()
+        assert cache_size() == 0
+
+    def test_expired_entries_excluded_from_size(self):
+        cache_set("expire_me", "v", ttl=0.01)
+        cache_set("keep_me", "v", ttl=60)
+        time.sleep(0.05)
+        assert cache_size() == 1
+
+
+class TestCacheTtlVariants:
+    @pytest.mark.parametrize("ttl", [1, 10, 60, 300, 3600])
+    def test_long_ttl_entries_survive(self, ttl):
+        cache_set("k", "v", ttl=ttl)
+        assert cache_get("k") == "v"
+
+    @pytest.mark.parametrize("key", ["metrics", "model_metrics", "drift_report", "a" * 100])
+    def test_various_key_formats(self, key):
+        cache_set(key, 42)
+        assert cache_get(key) == 42
+
+    def test_update_resets_ttl(self):
+        cache_set("renew", "old", ttl=0.05)
+        cache_set("renew", "new", ttl=60)
+        time.sleep(0.10)
+        assert cache_get("renew") == "new"
