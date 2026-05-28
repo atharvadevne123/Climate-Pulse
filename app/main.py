@@ -239,6 +239,33 @@ async def feature_drift(
     return {"feature": feature, **result}
 
 
+@app.get(
+    "/api/v1/drift/history",
+    tags=["monitoring"],
+    summary="Retrieve recent drift reports",
+)
+async def drift_history(
+    db: Annotated[Session, Depends(get_db)],
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Return the most recent drift detection reports."""
+    if limit > 200:
+        raise HTTPException(status_code=400, detail="limit must be ≤ 200")
+    from app.database import DriftReport
+    reports = db.query(DriftReport).order_by(DriftReport.timestamp.desc()).limit(limit).all()
+    return [
+        {
+            "id": r.id,
+            "feature_name": r.feature_name,
+            "ks_statistic": r.ks_statistic,
+            "p_value": r.p_value,
+            "drift_detected": bool(r.drift_detected),
+            "timestamp": r.timestamp.isoformat(),
+        }
+        for r in reports
+    ]
+
+
 @app.post(
     "/api/v1/retrain",
     tags=["model"],
