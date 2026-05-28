@@ -3,7 +3,13 @@ from __future__ import annotations
 
 import pytest
 
-from app.monitoring import compute_drift, get_recent_predictions, log_drift_report, log_prediction
+from app.monitoring import (
+    compute_drift,
+    get_prediction_by_correlation_id,
+    get_recent_predictions,
+    log_drift_report,
+    log_prediction,
+)
 
 
 class TestComputeDrift:
@@ -138,3 +144,48 @@ class TestComputeDriftEdgeCases:
         result = compute_drift([1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0])
         assert result["drift_detected"] is False
         assert result.get("reason") == "insufficient_data"
+
+
+class TestGetPredictionByCorrelationId:
+    def test_returns_none_for_unknown_id(self, db):
+        result = get_prediction_by_correlation_id(db, "nonexistent-id-xyz-000")
+        assert result is None
+
+    def test_returns_record_for_known_id(self, db):
+        log_prediction(
+            db=db,
+            correlation_id="lookup-corr-001",
+            station_id="LOOKUP_STATION",
+            features={"temperature": 22.0},
+            predictions={"predicted_temp": 23.0, "predicted_precip": 1.0, "extreme_event_prob": 0.05},
+            model_version="1.0.0",
+        )
+        result = get_prediction_by_correlation_id(db, "lookup-corr-001")
+        assert result is not None
+        assert result.correlation_id == "lookup-corr-001"
+
+    def test_returns_correct_station(self, db):
+        log_prediction(
+            db=db,
+            correlation_id="lookup-corr-002",
+            station_id="STATION_ALPHA",
+            features={"temperature": 18.0},
+            predictions={"predicted_temp": 19.0, "predicted_precip": 0.5, "extreme_event_prob": 0.02},
+            model_version="1.0.0",
+        )
+        result = get_prediction_by_correlation_id(db, "lookup-corr-002")
+        assert result.station_id == "STATION_ALPHA"
+
+    @pytest.mark.parametrize("corr_id", ["abc-001", "def-002", "ghi-003"])
+    def test_lookup_various_ids(self, db, corr_id):
+        log_prediction(
+            db=db,
+            correlation_id=corr_id,
+            station_id="PARAM_STATION",
+            features={"temperature": 10.0},
+            predictions={"predicted_temp": 11.0, "predicted_precip": 0.0, "extreme_event_prob": 0.0},
+            model_version="1.0.0",
+        )
+        result = get_prediction_by_correlation_id(db, corr_id)
+        assert result is not None
+        assert result.correlation_id == corr_id
