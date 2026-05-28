@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from scipy.stats import ks_2samp
@@ -42,7 +42,7 @@ def log_prediction(
     """Persist a prediction record to the database."""
     record = PredictionLog(
         correlation_id=correlation_id,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         station_id=station_id,
         features=features,
         predicted_temp=predictions.get("predicted_temp"),
@@ -69,7 +69,7 @@ def log_drift_report(
 ) -> DriftReport:
     """Persist a drift report for a single feature."""
     report = DriftReport(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         feature_name=feature_name,
         ks_statistic=drift_result["ks_statistic"],
         p_value=drift_result["p_value"],
