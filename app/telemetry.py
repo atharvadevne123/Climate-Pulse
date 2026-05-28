@@ -39,6 +39,25 @@ def get_stats() -> dict[str, Any]:
     return stats
 
 
+def reset() -> None:
+    """Clear all counters and histogram data (intended for testing)."""
+    _counters.clear()
+    _histograms.clear()
+    logger.debug("telemetry.reset: all metrics cleared")
+
+
+def get_counter(metric: str) -> int:
+    """Return the current value of a named counter (0 if absent).
+
+    Args:
+        metric: Counter name.
+
+    Returns:
+        Current integer count.
+    """
+    return _counters.get(metric, 0)
+
+
 class Timer:
     """Context manager that records elapsed time as a latency sample."""
 
