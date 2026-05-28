@@ -134,3 +134,58 @@ class TestPrepareFeatures:
     def test_missing_field_defaults_zero(self):
         df = prepare_features({"temperature": 20.0})
         assert df["precipitation"].iloc[0] == 0.0
+
+    @pytest.mark.parametrize("feature", [
+        "temperature", "precipitation", "humidity", "pressure",
+        "wind_speed", "cloud_cover", "month", "day_of_year",
+    ])
+    def test_all_feature_columns_present(self, feature):
+        df = prepare_features({})
+        assert feature in df.columns
+
+    def test_single_row_output(self):
+        df = prepare_features({"temperature": 25.0, "humidity": 70.0})
+        assert df.shape[0] == 1
+
+
+class TestLagFeatureTransformerEdgeCases:
+    def test_single_row_no_nan(self):
+        single = pd.DataFrame({"temperature": [20.0], "precipitation": [2.0]})
+        t = LagFeatureTransformer(lags=2)
+        out = t.fit_transform(single)
+        assert not out.isna().any().any()
+
+    def test_precip_lag_zeros_for_nan(self, sample_df):
+        t = LagFeatureTransformer(lags=1)
+        out = t.fit_transform(sample_df)
+        assert "precip_lag_1" in out.columns
+        assert out["precip_lag_1"].iloc[0] == 0.0
+
+
+class TestRollingStatsEdgeCases:
+    @pytest.mark.parametrize("window", [3, 7, 14])
+    def test_multiple_windows(self, sample_df, window):
+        t = RollingStatsTransformer(windows=[window])
+        out = t.fit_transform(sample_df)
+        assert f"temp_roll_mean_{window}" in out.columns
+
+    def test_default_windows_all_created(self, sample_df):
+        t = RollingStatsTransformer()
+        out = t.fit_transform(sample_df)
+        for w in [3, 7, 14]:
+            assert f"temp_roll_mean_{w}" in out.columns
+
+
+class TestSeasonalEncodingEdgeCases:
+    @pytest.mark.parametrize("month", [1.0, 6.0, 12.0])
+    def test_specific_months_encoded(self, month):
+        df = pd.DataFrame({"month": [month], "day_of_year": [180.0]})
+        t = SeasonalEncodingTransformer()
+        out = t.fit_transform(df)
+        assert -1 <= out["month_sin"].iloc[0] <= 1
+
+    def test_day_of_year_encoded(self, sample_df):
+        t = SeasonalEncodingTransformer()
+        out = t.fit_transform(sample_df)
+        assert "doy_sin" in out.columns
+        assert "doy_cos" in out.columns
