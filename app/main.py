@@ -21,6 +21,7 @@ from app.model import get_metrics, predict, train_models
 from app.monitoring import (
     compute_drift,
     compute_feature_drift_from_db,
+    get_drift_history,
     get_recent_predictions,
     log_drift_report,
     log_prediction,
@@ -251,8 +252,7 @@ async def drift_history(
     """Return the most recent drift detection reports."""
     if limit > 200:
         raise HTTPException(status_code=400, detail="limit must be ≤ 200")
-    from app.database import DriftReport
-    reports = db.query(DriftReport).order_by(DriftReport.timestamp.desc()).limit(limit).all()
+    reports = get_drift_history(db, limit=limit)
     return [
         {
             "id": r.id,
