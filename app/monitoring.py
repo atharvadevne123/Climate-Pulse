@@ -50,9 +50,14 @@ def log_prediction(
         extreme_event_prob=predictions.get("extreme_event_prob"),
         model_version=model_version,
     )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
+    try:
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+    except Exception as exc:
+        db.rollback()
+        logger.error("monitoring.log_prediction: DB write failed corr=%s err=%s", correlation_id, exc)
+        raise
     logger.info(
         "monitoring.log_prediction: id=%d station=%s corr=%s",
         record.id,
