@@ -8,6 +8,7 @@ from app.model import (
     _EnsembleClassifier,
     _EnsembleRegressor,
     _generate_synthetic_training_data,
+    _transform_features,
     get_metrics,
     predict,
     train_models,
@@ -141,3 +142,32 @@ class TestGetMetricsEdgeCases:
     def test_n_features_positive(self):
         m = get_metrics()
         assert m["n_features"] > 0
+
+
+class TestTransformFeatures:
+    def _make_df(self) -> pd.DataFrame:
+        return pd.DataFrame([{
+            "temperature": 20.0, "precipitation": 2.0, "humidity": 60.0,
+            "pressure": 1013.0, "wind_speed": 15.0, "cloud_cover": 30.0,
+            "month": 6.0, "day_of_year": 160.0,
+        }])
+
+    def test_returns_array(self):
+        import numpy as np
+        result = _transform_features(self._make_df())
+        assert isinstance(result, np.ndarray)
+
+    def test_output_row_count_matches_input(self):
+        df = self._make_df()
+        result = _transform_features(df)
+        assert result.shape[0] == len(df)
+
+    def test_output_has_more_features_than_input(self):
+        df = self._make_df()
+        result = _transform_features(df)
+        assert result.shape[1] > df.shape[1]
+
+    def test_output_is_finite(self):
+        import numpy as np
+        result = _transform_features(self._make_df())
+        assert np.isfinite(result).all()
