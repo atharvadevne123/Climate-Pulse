@@ -102,6 +102,19 @@ def get_recent_predictions(db: Session, limit: int = 100) -> list[PredictionLog]
     return db.query(PredictionLog).order_by(PredictionLog.timestamp.desc()).limit(limit).all()
 
 
+def get_drift_history(db: Session, limit: int = 100) -> list[DriftReport]:
+    """Fetch the most recent drift reports ordered by timestamp desc.
+
+    Args:
+        db: Database session.
+        limit: Maximum number of records to return.
+
+    Returns:
+        List of DriftReport ORM instances.
+    """
+    return db.query(DriftReport).order_by(DriftReport.timestamp.desc()).limit(limit).all()
+
+
 def compute_feature_drift_from_db(
     db: Session,
     feature_name: str,
