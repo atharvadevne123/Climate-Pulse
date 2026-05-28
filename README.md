@@ -1,8 +1,10 @@
 # Climate-Pulse
 
 [![CI](https://github.com/atharvadevne123/Climate-Pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/atharvadevne123/Climate-Pulse/actions/workflows/ci.yml)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://python.org)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Coverage](https://img.shields.io/badge/coverage-75%25%2B-brightgreen.svg)](https://github.com/atharvadevne123/Climate-Pulse/actions)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 **Short-range climate pattern and extreme weather event prediction API using XGBoost-LightGBM ensemble with atmospheric feature engineering, KS-drift monitoring, and Airflow retraining pipelines.**
 
