@@ -80,9 +80,14 @@ def log_drift_report(
         p_value=drift_result["p_value"],
         drift_detected=int(drift_result["drift_detected"]),
     )
-    db.add(report)
-    db.commit()
-    db.refresh(report)
+    try:
+        db.add(report)
+        db.commit()
+        db.refresh(report)
+    except Exception as exc:
+        db.rollback()
+        logger.error("monitoring.log_drift_report: DB write failed feature=%s err=%s", feature_name, exc)
+        raise
     logger.info(
         "monitoring.log_drift_report: feature=%s drift=%s ks=%.4f",
         feature_name,
