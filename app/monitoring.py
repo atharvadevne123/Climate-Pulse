@@ -102,6 +102,23 @@ def get_recent_predictions(db: Session, limit: int = 100) -> list[PredictionLog]
     return db.query(PredictionLog).order_by(PredictionLog.timestamp.desc()).limit(limit).all()
 
 
+def get_prediction_by_correlation_id(db: Session, correlation_id: str) -> PredictionLog | None:
+    """Return a single prediction log by correlation ID, or None if not found.
+
+    Args:
+        db: Active SQLAlchemy session.
+        correlation_id: UUID string assigned to the original prediction request.
+
+    Returns:
+        Matching PredictionLog instance, or None.
+    """
+    return (
+        db.query(PredictionLog)
+        .filter(PredictionLog.correlation_id == correlation_id)
+        .first()
+    )
+
+
 def get_drift_history(db: Session, limit: int = 100) -> list[DriftReport]:
     """Fetch the most recent drift reports ordered by timestamp desc.
 
