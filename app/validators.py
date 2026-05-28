@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-VALID_FEATURES = frozenset([
+VALID_FEATURES: frozenset[str] = frozenset([
     "temperature", "precipitation", "humidity", "pressure",
     "wind_speed", "cloud_cover", "month", "day_of_year",
 ])
@@ -22,8 +23,15 @@ FEATURE_RANGES: dict[str, tuple[float, float]] = {
 }
 
 
-def validate_feature_dict(data: dict) -> list[str]:
-    """Return a list of validation error strings; empty means valid."""
+def validate_feature_dict(data: dict[str, Any]) -> list[str]:
+    """Return a list of validation error strings; empty means valid.
+
+    Args:
+        data: Dictionary mapping feature name to its value.
+
+    Returns:
+        List of human-readable error strings (empty if all valid).
+    """
     errors: list[str] = []
     for feature, (lo, hi) in FEATURE_RANGES.items():
         if feature not in data:
