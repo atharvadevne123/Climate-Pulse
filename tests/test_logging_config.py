@@ -29,3 +29,32 @@ class TestConfigureLogging:
 
     def test_configure_no_error(self):
         configure_logging()
+
+
+class TestStructuredFormatterThreadId:
+    def test_thread_id_in_output(self):
+        fmt = StructuredFormatter()
+        record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
+        result = fmt.format(record)
+        assert "thread=" in result
+
+    def test_structured_fields_and_thread_combined(self):
+        fmt = StructuredFormatter()
+        record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
+        record.station_id = "STATION_42"
+        result = fmt.format(record)
+        assert "station_id=STATION_42" in result
+        assert "thread=" in result
+
+    def test_no_extra_fields_still_has_thread(self):
+        fmt = StructuredFormatter()
+        record = logging.LogRecord("test", logging.DEBUG, "", 0, "debug msg", (), None)
+        result = fmt.format(record)
+        assert "thread=" in result
+
+    def test_model_version_in_output(self):
+        fmt = StructuredFormatter()
+        record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
+        record.model_version = "2.0.0"
+        result = fmt.format(record)
+        assert "model_version=2.0.0" in result
