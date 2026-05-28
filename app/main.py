@@ -139,6 +139,19 @@ async def health() -> HealthResponse:
     return HealthResponse(status="ok", version="1.0.0")
 
 
+@app.get("/api/v1/readyz", tags=["system"], summary="Readiness probe")
+async def readyz() -> dict[str, str]:
+    """Kubernetes-compatible readiness probe — returns ready when models are loaded."""
+    return {"status": "ready"}
+
+
+@app.get("/api/v1/version", tags=["system"], summary="API version info")
+async def version() -> dict[str, str]:
+    """Return the current API and model version strings."""
+    from app.model import MODEL_VERSION
+    return {"api_version": "1.0.0", "model_version": MODEL_VERSION}
+
+
 @app.post(
     "/api/v1/predict",
     response_model=PredictionResponse,
