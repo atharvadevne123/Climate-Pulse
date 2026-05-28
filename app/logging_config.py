@@ -1,4 +1,8 @@
-"""Structured logging configuration for Climate-Pulse."""
+"""Structured logging configuration for Climate-Pulse.
+
+Provides key=value structured log lines for easy parsing by log aggregators
+such as Datadog, Loki, or CloudWatch Logs Insights.
+"""
 from __future__ import annotations
 
 import logging
@@ -6,14 +10,21 @@ import os
 import sys
 from typing import Any
 
+STRUCTURED_FIELDS = ("correlation_id", "station_id", "model_version", "request_id")
+
 
 class StructuredFormatter(logging.Formatter):
-    """Format log records as structured key=value lines."""
+    """Format log records as structured key=value lines.
+
+    Extra fields attached to log records via ``extra=`` are appended
+    in ``[key=value ...]`` notation after the base message.
+    """
 
     def format(self, record: logging.LogRecord) -> str:
+        """Render a log record with appended structured context fields."""
         base = super().format(record)
         extra: dict[str, Any] = {}
-        for key in ("correlation_id", "station_id", "model_version"):
+        for key in STRUCTURED_FIELDS:
             if hasattr(record, key):
                 extra[key] = getattr(record, key)
         if extra:
