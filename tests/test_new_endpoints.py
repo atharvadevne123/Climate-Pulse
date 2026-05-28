@@ -83,3 +83,24 @@ class TestStationHistoryEndpoint:
             assert "station_id" in record
             assert "predicted_temp" in record
             assert "timestamp" in record
+
+
+class TestTelemetryEndpoint:
+    def test_telemetry_returns_200(self, client):
+        resp = client.get("/api/v1/telemetry")
+        assert resp.status_code == 200
+
+    def test_telemetry_returns_dict(self, client):
+        data = client.get("/api/v1/telemetry").json()
+        assert isinstance(data, dict)
+
+    def test_telemetry_has_counters_after_predict(self, client, sample_weather_payload):
+        client.post("/api/v1/predict", json=sample_weather_payload)
+        data = client.get("/api/v1/telemetry").json()
+        assert "counters" in data
+
+    def test_telemetry_predictions_counter_increments(self, client, sample_weather_payload):
+        before = client.get("/api/v1/telemetry").json().get("counters", {}).get("predictions.total", 0)
+        client.post("/api/v1/predict", json=sample_weather_payload)
+        after = client.get("/api/v1/telemetry").json()["counters"]["predictions.total"]
+        assert after > before
