@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from app.telemetry import Timer, _counters, _histograms, get_stats, increment, record_latency
+from app.telemetry import Timer, _counters, _histograms, get_counter, get_stats, increment, record_latency, reset
 
 
 @pytest.fixture(autouse=True)
@@ -56,3 +56,35 @@ class TestTimer:
         stats = get_stats()
         assert "test_op_p50" in stats
         assert stats["test_op_p50"] >= 10.0
+
+
+class TestReset:
+    def test_reset_clears_counters(self):
+        increment("x", 5)
+        reset()
+        assert get_counter("x") == 0
+
+    def test_reset_clears_histograms(self):
+        record_latency("lat", 42.0)
+        reset()
+        stats = get_stats()
+        assert "lat_p50" not in stats
+
+    def test_reset_idempotent_on_empty_state(self):
+        reset()
+        reset()
+        assert get_stats()["counters"] == {}
+
+
+class TestGetCounter:
+    def test_absent_metric_returns_zero(self):
+        assert get_counter("nonexistent_metric_xyz") == 0
+
+    def test_returns_current_count(self):
+        increment("gc_test", 7)
+        assert get_counter("gc_test") == 7
+
+    def test_returns_accumulated_count(self):
+        increment("acc_test", 3)
+        increment("acc_test", 4)
+        assert get_counter("acc_test") == 7
