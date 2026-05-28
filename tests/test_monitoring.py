@@ -89,3 +89,52 @@ class TestGetRecentPredictions:
             )
         result = get_recent_predictions(db, limit=3)
         assert len(result) <= 3
+
+    @pytest.mark.parametrize("limit", [1, 5, 10, 50])
+    def test_limit_values(self, db, limit):
+        result = get_recent_predictions(db, limit=limit)
+        assert len(result) <= limit
+
+    def test_returns_most_recent_first(self, db):
+        for i in range(3):
+            log_prediction(
+                db=db,
+                correlation_id=f"order-{i}",
+                station_id="ORDER_TEST",
+                features={"temperature": float(i)},
+                predictions={"predicted_temp": float(i), "predicted_precip": 0.0, "extreme_event_prob": 0.0},
+                model_version="1.0.0",
+            )
+        result = get_recent_predictions(db, limit=10)
+        ids = [r.id for r in result]
+        assert ids == sorted(ids, reverse=True)
+
+
+class TestComputeDriftEdgeCases:
+    @pytest.mark.parametrize("size", [5, 10, 30, 100])
+    def test_identical_distributions_no_drift(self, size):
+        data = [float(i) for i in range(size)]
+        result = compute_drift(data, data)
+        assert result["drift_detected"] is False
+
+    def test_ks_statistic_bounded(self):
+        ref = [1.0] * 20
+        cur = [2.0] * 20
+        result = compute_drift(ref, cur)
+        assert 0.0 <= result["ks_statistic"] <= 1.0
+
+    def test_p_value_bounded(self):
+        ref = [float(i) for i in range(20)]
+        cur = [float(i) for i in range(20)]
+        result = compute_drift(ref, cur)
+        assert 0.0 <= result["p_value"] <= 1.0
+
+    def test_exactly_five_elements_valid(self):
+        result = compute_drift([1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0, 8.0, 9.0, 10.0])
+        assert "ks_statistic" in result
+        assert "reason" not in result
+
+    def test_four_elements_insufficient(self):
+        result = compute_drift([1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0])
+        assert result["drift_detected"] is False
+        assert result.get("reason") == "insufficient_data"
