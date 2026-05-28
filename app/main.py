@@ -306,6 +306,31 @@ async def drift_history(
     ]
 
 
+@app.get(
+    "/api/v1/model/freshness",
+    tags=["model"],
+    summary="Check model freshness (age of persisted model files)",
+)
+async def model_freshness() -> dict[str, Any]:
+    """Return the age in hours of each persisted model file."""
+    import time
+    from app.model import EXTREME_MODEL_PATH, PRECIP_MODEL_PATH, TEMP_MODEL_PATH
+    now = time.time()
+
+    def _age_hours(path) -> float | None:
+        try:
+            return round((now - path.stat().st_mtime) / 3600, 2)
+        except FileNotFoundError:
+            return None
+
+    return {
+        "temp_model_age_hours": _age_hours(TEMP_MODEL_PATH),
+        "precip_model_age_hours": _age_hours(PRECIP_MODEL_PATH),
+        "extreme_model_age_hours": _age_hours(EXTREME_MODEL_PATH),
+        "stale_threshold_hours": 24,
+    }
+
+
 @app.post(
     "/api/v1/retrain",
     tags=["model"],
