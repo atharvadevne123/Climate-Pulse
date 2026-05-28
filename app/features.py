@@ -13,15 +13,28 @@ logger = logging.getLogger(__name__)
 
 
 class LagFeatureTransformer(BaseEstimator, TransformerMixin):
-    """Adds lag-1, lag-2, lag-3 columns for temperature and precipitation."""
+    """Adds lag-1 through lag-N columns for temperature and precipitation.
+
+    Attributes:
+        lags: Number of lag steps to generate (default 3).
+    """
 
     def __init__(self, lags: int = 3) -> None:
         self.lags = lags
 
-    def fit(self, X: pd.DataFrame, y=None):  # noqa: N803
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> LagFeatureTransformer:  # noqa: N803
+        """No-op fit — lag transformer is stateless."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:  # noqa: N803
+        """Add lag columns to the input DataFrame.
+
+        Args:
+            X: Input feature DataFrame.
+
+        Returns:
+            DataFrame with added lag columns for temperature and precipitation.
+        """
         X = X.copy()
         for lag in range(1, self.lags + 1):
             if "temperature" in X.columns:
@@ -32,12 +45,17 @@ class LagFeatureTransformer(BaseEstimator, TransformerMixin):
 
 
 class RollingStatsTransformer(BaseEstimator, TransformerMixin):
-    """Adds rolling mean/std over 3, 7, and 14 timestep windows."""
+    """Adds rolling mean/std over configurable timestep windows.
+
+    Attributes:
+        windows: List of window sizes in timesteps (default [3, 7, 14]).
+    """
 
     def __init__(self, windows: list[int] | None = None) -> None:
         self.windows = windows or [3, 7, 14]
 
-    def fit(self, X: pd.DataFrame, y=None):  # noqa: N803
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> RollingStatsTransformer:  # noqa: N803
+        """No-op fit — rolling stats transformer is stateless."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:  # noqa: N803
@@ -58,9 +76,10 @@ class RollingStatsTransformer(BaseEstimator, TransformerMixin):
 
 
 class AtmosphericRatioTransformer(BaseEstimator, TransformerMixin):
-    """Derives humidity-pressure ratio and wind chill index."""
+    """Derives humidity-pressure ratio and wind chill index from raw observations."""
 
-    def fit(self, X: pd.DataFrame, y=None):  # noqa: N803
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> AtmosphericRatioTransformer:  # noqa: N803
+        """No-op fit — ratio transformer is stateless."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:  # noqa: N803
@@ -78,9 +97,14 @@ class AtmosphericRatioTransformer(BaseEstimator, TransformerMixin):
 
 
 class SeasonalEncodingTransformer(BaseEstimator, TransformerMixin):
-    """Encodes month/day-of-year using sine/cosine cyclical encoding."""
+    """Encodes month and day-of-year as sine/cosine cyclical features.
 
-    def fit(self, X: pd.DataFrame, y=None):  # noqa: N803
+    Cyclical encoding preserves the periodic nature of temporal features
+    (e.g., December is adjacent to January, day 365 to day 1).
+    """
+
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> SeasonalEncodingTransformer:  # noqa: N803
+        """No-op fit — encoding is deterministic."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:  # noqa: N803
@@ -95,9 +119,13 @@ class SeasonalEncodingTransformer(BaseEstimator, TransformerMixin):
 
 
 class DewiPointTransformer(BaseEstimator, TransformerMixin):
-    """Approximates dew point temperature from temperature and relative humidity."""
+    """Approximates dew point temperature using the Magnus formula.
 
-    def fit(self, X: pd.DataFrame, y=None):  # noqa: N803
+    Requires temperature (°C) and relative humidity (%) columns.
+    """
+
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> DewiPointTransformer:  # noqa: N803
+        """No-op fit — dew point formula is stateless."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:  # noqa: N803
