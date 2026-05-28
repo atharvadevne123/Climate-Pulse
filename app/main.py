@@ -246,6 +246,41 @@ async def feature_drift(
 
 
 @app.get(
+    "/api/v1/stations/{station_id}/history",
+    tags=["monitoring"],
+    summary="Fetch prediction history for a specific weather station",
+)
+async def station_history(
+    station_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Return recent prediction logs filtered by station_id."""
+    if limit > 200:
+        raise HTTPException(status_code=400, detail="limit must be ≤ 200")
+    from app.database import PredictionLog
+    logs = (
+        db.query(PredictionLog)
+        .filter(PredictionLog.station_id == station_id)
+        .order_by(PredictionLog.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": log.id,
+            "correlation_id": log.correlation_id,
+            "station_id": log.station_id,
+            "timestamp": log.timestamp.isoformat(),
+            "predicted_temp": log.predicted_temp,
+            "predicted_precip": log.predicted_precip,
+            "extreme_event_prob": log.extreme_event_prob,
+        }
+        for log in logs
+    ]
+
+
+@app.get(
     "/api/v1/drift/history",
     tags=["monitoring"],
     summary="Retrieve recent drift reports",
