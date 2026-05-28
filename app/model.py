@@ -233,24 +233,41 @@ def train_models(
     return metrics
 
 
-def _load_bundle(path: Path) -> dict:
+def _load_bundle(path: Path) -> dict[str, Any]:
+    """Load a persisted model bundle, training first if the file is missing.
+
+    Args:
+        path: Filesystem path to the joblib bundle.
+
+    Returns:
+        Dict with keys ``pipeline`` (sklearn Pipeline) and ``model`` (ensemble).
+    """
     if not path.exists():
         logger.warning("model: %s not found — training now", path.name)
         train_models()
     return joblib.load(path)
 
 
+def _transform_features(features: pd.DataFrame) -> np.ndarray:
+    """Load the temp model bundle and apply its feature pipeline.
+
+    Args:
+        features: Raw input DataFrame from the predict endpoint.
+
+    Returns:
+        Engineered feature array ready for model inference.
+    """
+    bundle = _load_bundle(TEMP_MODEL_PATH)
+    return bundle["pipeline"].transform(features)
+
+
 def predict(features: pd.DataFrame) -> dict[str, float]:
     """Return predicted temperature, precipitation, and extreme event probability."""
-    temp_bundle = _load_bundle(TEMP_MODEL_PATH)
-    precip_bundle = _load_bundle(PRECIP_MODEL_PATH)
-    extreme_bundle = _load_bundle(EXTREME_MODEL_PATH)
+    X_eng = _transform_features(features)
 
-    X_eng = temp_bundle["pipeline"].transform(features)
-
-    predicted_temp = float(temp_bundle["model"].predict(X_eng)[0])
-    predicted_precip = float(np.maximum(0, precip_bundle["model"].predict(X_eng)[0]))
-    extreme_proba = float(extreme_bundle["model"].predict_proba(X_eng)[0][1])
+    predicted_temp = float(_load_bundle(TEMP_MODEL_PATH)["model"].predict(X_eng)[0])
+    predicted_precip = float(np.maximum(0, _load_bundle(PRECIP_MODEL_PATH)["model"].predict(X_eng)[0]))
+    extreme_proba = float(_load_bundle(EXTREME_MODEL_PATH)["model"].predict_proba(X_eng)[0][1])
 
     logger.debug(
         "model.predict: temp=%.2f precip=%.2f extreme_prob=%.4f",
