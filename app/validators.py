@@ -40,6 +40,14 @@ def validate_feature_dict(data: dict) -> list[str]:
     return errors
 
 
+STATION_ID_MAX_LEN = 64
+
+
 def is_valid_station_id(station_id: str) -> bool:
-    """Return True if station_id is a non-empty, printable ASCII string."""
-    return bool(station_id and station_id.strip() and station_id.isprintable())
+    """Return True if station_id is a non-empty, printable ASCII string within length limits."""
+    if not station_id or not station_id.strip():
+        return False
+    if len(station_id) > STATION_ID_MAX_LEN:
+        logger.warning("validators.is_valid_station_id: station_id too long len=%d", len(station_id))
+        return False
+    return station_id.isprintable()
