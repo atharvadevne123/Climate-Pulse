@@ -51,3 +51,35 @@ class TestDriftHistoryEndpoint:
     def test_drift_history_valid_limits(self, client, limit):
         resp = client.get(f"/api/v1/drift/history?limit={limit}")
         assert resp.status_code == 200
+
+
+class TestStationHistoryEndpoint:
+    def test_station_history_returns_list(self, client, sample_weather_payload):
+        client.post("/api/v1/predict", json=sample_weather_payload)
+        resp = client.get(f"/api/v1/stations/{sample_weather_payload['station_id']}/history")
+        assert resp.status_code == 200
+        assert isinstance(resp.json(), list)
+
+    def test_station_history_unknown_station_empty(self, client):
+        resp = client.get("/api/v1/stations/NONEXISTENT_XYZ_999/history")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_station_history_limit_too_high(self, client):
+        resp = client.get("/api/v1/stations/S1/history?limit=201")
+        assert resp.status_code == 400
+
+    @pytest.mark.parametrize("limit", [1, 5, 10])
+    def test_station_history_valid_limits(self, client, limit):
+        resp = client.get(f"/api/v1/stations/S1/history?limit={limit}")
+        assert resp.status_code == 200
+
+    def test_station_history_record_fields(self, client, sample_weather_payload):
+        client.post("/api/v1/predict", json=sample_weather_payload)
+        records = client.get(f"/api/v1/stations/{sample_weather_payload['station_id']}/history?limit=1").json()
+        if records:
+            record = records[0]
+            assert "id" in record
+            assert "station_id" in record
+            assert "predicted_temp" in record
+            assert "timestamp" in record
