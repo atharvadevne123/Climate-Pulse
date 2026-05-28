@@ -50,3 +50,41 @@ class TestIsValidStationId:
     @pytest.mark.parametrize("bad", ["", "   ", "\x00invalid"])
     def test_invalid_station_ids(self, bad):
         assert is_valid_station_id(bad) is False
+
+    def test_station_id_at_max_length_is_valid(self):
+        from app.validators import STATION_ID_MAX_LEN
+        assert is_valid_station_id("A" * STATION_ID_MAX_LEN) is True
+
+    def test_station_id_exceeds_max_length_is_invalid(self):
+        from app.validators import STATION_ID_MAX_LEN
+        assert is_valid_station_id("A" * (STATION_ID_MAX_LEN + 1)) is False
+
+    @pytest.mark.parametrize("valid_id", ["AWS-001", "station.42", "NYC_JFK_INTL", "S1"])
+    def test_valid_station_id_formats(self, valid_id):
+        assert is_valid_station_id(valid_id) is True
+
+
+class TestValidateFeatureDictEdgeCases:
+    @pytest.mark.parametrize("field,boundary_value", [
+        ("temperature", -90.0),
+        ("temperature", 60.0),
+        ("precipitation", 0.0),
+        ("humidity", 0.0),
+        ("humidity", 100.0),
+        ("month", 1.0),
+        ("month", 12.0),
+    ])
+    def test_boundary_values_are_valid(self, field, boundary_value):
+        payload = {**VALID_PAYLOAD, field: boundary_value}
+        errors = validate_feature_dict(payload)
+        field_errors = [e for e in errors if field in e]
+        assert field_errors == []
+
+    def test_integer_values_accepted(self):
+        payload = {**VALID_PAYLOAD, "temperature": 20, "month": 6}
+        assert validate_feature_dict(payload) == []
+
+    def test_partial_payload_flags_missing(self):
+        partial = {"temperature": 20.0, "humidity": 60.0}
+        errors = validate_feature_dict(partial)
+        assert any("missing" in e for e in errors)
