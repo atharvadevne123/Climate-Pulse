@@ -139,12 +139,35 @@ Kubernetes readiness probe — returns `{"status": "ready"}` when models are loa
 
 ---
 
+## Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage report
+pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=75
+
+# Run specific test module
+pytest tests/test_api.py -v
+pytest tests/test_model.py -v
+```
+
+The test suite includes:
+- `test_api.py`, `test_api_extended.py` — endpoint happy paths and edge cases
+- `test_model.py`, `test_model_extended.py` — training, prediction, ensemble tests
+- `test_features.py` — feature pipeline and transformer unit tests
+- `test_monitoring.py` — drift detection and prediction logging
+- `test_database.py` — ORM model CRUD tests
+- `test_cache.py` — TTL cache behavior
+- `test_validators.py` — input validation
+
 ## Development
 
 ```bash
 make install   # install dependencies
-make test      # run pytest
-make lint      # ruff check
+make test      # run pytest with coverage
+make lint      # ruff check + format check
 make run       # start dev server
 make diagram   # regenerate architecture diagram
 ```
