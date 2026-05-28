@@ -16,6 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.cache import cache_get, cache_invalidate, cache_set
 from app.database import get_db, init_db
+from app.exceptions import register_exception_handlers
 from app.features import FEATURE_COLUMNS, prepare_features
 from app.model import get_metrics, predict, train_models
 from app.monitoring import (
@@ -26,6 +27,7 @@ from app.monitoring import (
     log_drift_report,
     log_prediction,
 )
+from app.telemetry import Timer, increment
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -88,6 +90,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+register_exception_handlers(app)
 
 
 # ---------- Schemas ----------
@@ -170,13 +174,16 @@ async def predict_weather(
     db: Annotated[Session, Depends(get_db)],
 ) -> PredictionResponse:
     """Given current atmospheric observations, return short-range weather predictions."""
+    increment("predictions.total")
     corr_id = getattr(request.state, "correlation_id", str(uuid.uuid4()))
     features_dict = payload.model_dump(exclude={"station_id"})
     df = prepare_features(features_dict)
 
     try:
-        result = predict(df)
+        with Timer("predict_latency_ms"):
+            result = predict(df)
     except Exception as exc:
+        increment("predictions.errors")
         logger.error("main.predict_weather: prediction failed corr=%s err=%s", corr_id, exc)
         raise HTTPException(status_code=500, detail="Prediction failed") from exc
 
@@ -339,10 +346,13 @@ async def model_freshness() -> dict[str, Any]:
 )
 async def retrain() -> dict[str, Any]:
     """Retrain all models; returns updated CV metrics."""
+    increment("retrains.total")
     logger.info("main.retrain: retraining triggered")
     try:
-        metrics_result = train_models()
+        with Timer("retrain_latency_ms"):
+            metrics_result = train_models()
     except Exception as exc:
+        increment("retrains.errors")
         raise HTTPException(status_code=500, detail="Retraining failed") from exc
     cache_invalidate("model_metrics")
     return {"status": "retrained", **metrics_result}
@@ -373,3 +383,14 @@ async def recent_predictions(
         }
         for log in logs
     ]
+
+
+@app.get(
+    "/api/v1/telemetry",
+    tags=["system"],
+    summary="Return in-process telemetry counters and latency percentiles",
+)
+async def telemetry_stats() -> dict[str, Any]:
+    """Return live telemetry: request counters and latency histogram percentiles."""
+    from app.telemetry import get_stats
+    return get_stats()

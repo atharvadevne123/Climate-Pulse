@@ -1,8 +1,6 @@
 """Tests for app/utils.py utility functions."""
 from __future__ import annotations
 
-import math
-
 import pytest
 
 from app.utils import clamp, flatten_dict, round_to_sig_figs, safe_float

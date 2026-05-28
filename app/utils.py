@@ -1,8 +1,8 @@
 """General-purpose utility functions for Climate-Pulse."""
 from __future__ import annotations
 
-import math
 import logging
+import math
 from typing import Any
 
 logger = logging.getLogger(__name__)
