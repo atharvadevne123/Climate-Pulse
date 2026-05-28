@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import threading
 from typing import Any
 
 STRUCTURED_FIELDS = ("correlation_id", "station_id", "model_version", "request_id")
@@ -21,16 +22,21 @@ class StructuredFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
-        """Render a log record with appended structured context fields."""
+        """Render a log record with appended structured context fields and thread ID.
+
+        Args:
+            record: Standard library log record to format.
+
+        Returns:
+            Formatted string with optional ``[key=value ...]`` suffix.
+        """
         base = super().format(record)
-        extra: dict[str, Any] = {}
+        extra: dict[str, Any] = {"thread": threading.get_ident()}
         for key in STRUCTURED_FIELDS:
             if hasattr(record, key):
                 extra[key] = getattr(record, key)
-        if extra:
-            kv = " ".join(f"{k}={v}" for k, v in extra.items())
-            return f"{base} [{kv}]"
-        return base
+        kv = " ".join(f"{k}={v}" for k, v in extra.items())
+        return f"{base} [{kv}]"
 
 
 def configure_logging(level: str | None = None) -> None:
