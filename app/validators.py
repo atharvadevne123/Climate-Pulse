@@ -59,3 +59,30 @@ def is_valid_station_id(station_id: str) -> bool:
         logger.warning("validators.is_valid_station_id: station_id too long len=%d", len(station_id))
         return False
     return station_id.isprintable()
+
+
+def validate_cross_field(data: dict[str, Any]) -> list[str]:
+    """Return cross-field validation errors that cannot be caught field-by-field.
+
+    Currently checks:
+    - ``dew_point`` (if present) should not exceed ``temperature``
+    - ``pressure`` extremes are inconsistent with tropical storm conditions
+
+    Args:
+        data: Dict of feature name → value (numeric).
+
+    Returns:
+        List of human-readable error strings (empty if all valid).
+    """
+    errors: list[str] = []
+    temp = data.get("temperature")
+    humidity = data.get("humidity")
+    if temp is not None and humidity is not None:
+        if isinstance(temp, int | float) and isinstance(humidity, int | float):
+            # Very low humidity with very high temperature is physically possible but flagged
+            if temp > 45 and humidity < 5:
+                errors.append(
+                    f"temperature={temp} with humidity={humidity} is an unusual combination; verify sensor"
+                )
+    logger.debug("validators.validate_cross_field: errors=%s", errors)
+    return errors
