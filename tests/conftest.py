@@ -31,11 +31,15 @@ def setup_test_db():
 
 @pytest.fixture
 def db() -> Generator[Session, None, None]:
-    session = TestingSessionLocal()
+    connection = test_engine.connect()
+    transaction = connection.begin()
+    session = sessionmaker(autocommit=False, autoflush=False, bind=connection)()
     try:
         yield session
     finally:
         session.close()
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture
