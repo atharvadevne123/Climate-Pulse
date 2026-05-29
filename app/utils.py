@@ -118,6 +118,43 @@ def format_duration(seconds: float) -> str:
     return f"{secs:.1f}s"
 
 
+def moving_average(values: list[float], window: int) -> list[float]:
+    """Return a list of moving averages over *window* elements.
+
+    Args:
+        values: Input sequence of floats.
+        window: Number of preceding values to average (must be >= 1).
+
+    Returns:
+        List of the same length as *values*; early values use a shrinking window.
+    """
+    if window < 1:
+        raise ValueError(f"window must be >= 1, got {window}")
+    result: list[float] = []
+    for i, _ in enumerate(values):
+        start = max(0, i - window + 1)
+        chunk = values[start : i + 1]
+        result.append(sum(chunk) / len(chunk))
+    return result
+
+
+def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
+    """Return numerator / denominator, falling back to *default* when denominator is zero.
+
+    Args:
+        numerator: Dividend.
+        denominator: Divisor.
+        default: Value returned when denominator is zero (default 0.0).
+
+    Returns:
+        Division result or *default*.
+    """
+    if denominator == 0.0:
+        logger.debug("utils.safe_divide: denominator=0, returning default=%s", default)
+        return default
+    return numerator / denominator
+
+
 def batch_iter(iterable: Iterable[T], batch_size: int) -> Generator[list[T], None, None]:
     """Yield successive fixed-size batches from *iterable*.
 
