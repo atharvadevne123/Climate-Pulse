@@ -180,3 +180,40 @@ class TestVersionEndpoint:
     def test_version_has_model_version(self, client):
         data = client.get("/api/v1/version").json()
         assert "model_version" in data
+
+
+class TestRetrain:
+    def test_retrain_returns_200(self, client):
+        resp = client.post("/api/v1/retrain")
+        assert resp.status_code == 200
+
+    def test_retrain_status_field(self, client):
+        data = client.post("/api/v1/retrain").json()
+        assert data.get("status") == "retrained"
+
+    def test_retrain_returns_model_version(self, client):
+        data = client.post("/api/v1/retrain").json()
+        assert "model_version" in data
+        assert isinstance(data["model_version"], str)
+
+    def test_retrain_metrics_present(self, client):
+        data = client.post("/api/v1/retrain").json()
+        assert "metrics" in data
+
+
+class TestPredictResponseHeaders:
+    def test_correlation_id_header_in_response(self, client, sample_weather_payload):
+        resp = client.post("/api/v1/predict", json=sample_weather_payload)
+        assert "X-Correlation-ID" in resp.headers
+
+    def test_custom_correlation_id_echoed(self, client, sample_weather_payload):
+        resp = client.post(
+            "/api/v1/predict",
+            json=sample_weather_payload,
+            headers={"X-Correlation-ID": "echo-test-42"},
+        )
+        assert resp.headers.get("X-Correlation-ID") == "echo-test-42"
+
+    def test_predict_returns_station_id(self, client, sample_weather_payload):
+        data = client.post("/api/v1/predict", json=sample_weather_payload).json()
+        assert data["station_id"] == sample_weather_payload["station_id"]
