@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.cache import cache_get, cache_invalidate, cache_set
+from app.cache import cache_get, cache_invalidate, cache_set, cache_stats
 from app.database import get_db, init_db
 from app.exceptions import register_exception_handlers
 from app.features import FEATURE_COLUMNS, prepare_features
@@ -23,10 +23,13 @@ from app.model import get_metrics, predict, train_models
 from app.monitoring import (
     compute_drift,
     compute_feature_drift_from_db,
+    get_drift_count_by_feature,
     get_drift_history,
     get_recent_predictions,
+    get_station_stats,
     log_drift_report,
     log_prediction,
+    purge_old_predictions,
 )
 from app.telemetry import Timer, increment
 
@@ -399,3 +402,73 @@ async def telemetry_stats() -> dict[str, Any]:
     from app.telemetry import get_stats
 
     return get_stats()
+
+
+@app.get(
+    "/api/v1/model/info",
+    tags=["model"],
+    summary="Return model metadata and feature pipeline information",
+)
+async def model_info() -> dict[str, Any]:
+    """Return current model version, feature count, and pipeline stage names."""
+    from app.features import FEATURE_COLUMNS, build_feature_pipeline
+    from app.model import MODEL_VERSION, is_model_trained
+
+    pipeline = build_feature_pipeline()
+    return {
+        "model_version": MODEL_VERSION,
+        "is_trained": is_model_trained(),
+        "input_features": list(FEATURE_COLUMNS),
+        "pipeline_stages": [step[0] for step in pipeline.steps],
+        "n_input_features": len(FEATURE_COLUMNS),
+    }
+
+
+@app.get(
+    "/api/v1/stations/{station_id}/stats",
+    tags=["monitoring"],
+    summary="Return aggregate prediction statistics for a weather station",
+)
+async def station_stats(
+    station_id: str,
+    db: Annotated[Session, Depends(get_db)],
+) -> dict[str, Any]:
+    """Return count and avg/min/max statistics for temperature, precipitation, and extreme event prob."""
+    return get_station_stats(db, station_id)
+
+
+@app.get(
+    "/api/v1/drift/summary",
+    tags=["monitoring"],
+    summary="Return count of drift events detected per feature",
+)
+async def drift_summary(db: Annotated[Session, Depends(get_db)]) -> dict[str, Any]:
+    """Return a summary of how many drift events have been detected per feature."""
+    counts = get_drift_count_by_feature(db)
+    return {"drift_counts_by_feature": counts}
+
+
+@app.get(
+    "/api/v1/cache/stats",
+    tags=["system"],
+    summary="Return in-memory cache hit/miss statistics",
+)
+async def cache_statistics() -> dict[str, Any]:
+    """Return current cache size, total hits, total misses, and overall hit rate."""
+    return cache_stats()
+
+
+@app.delete(
+    "/api/v1/predictions/purge",
+    tags=["monitoring"],
+    summary="Purge old prediction logs beyond the retention threshold",
+)
+async def purge_predictions(
+    db: Annotated[Session, Depends(get_db)],
+    keep_latest: int = 10000,
+) -> dict[str, Any]:
+    """Delete prediction logs beyond the most recent *keep_latest* records."""
+    if keep_latest < 1:
+        raise HTTPException(status_code=400, detail="keep_latest must be >= 1")
+    deleted = purge_old_predictions(db, keep_latest=keep_latest)
+    return {"deleted": deleted, "kept": keep_latest}
