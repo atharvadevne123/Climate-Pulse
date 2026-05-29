@@ -29,6 +29,8 @@ EXTREME_MODEL_PATH = MODEL_DIR / "extreme_model.joblib"
 METRICS_PATH = MODEL_DIR / "metrics.json"
 MODEL_VERSION = "1.0.0"
 
+_bundle_cache: dict[str, dict] = {}
+
 
 class _EnsembleRegressor:
     """Average-prediction ensemble of heterogeneous regressors.
@@ -241,12 +243,13 @@ def train_models(
     joblib.dump({"pipeline": feat_pipe, "model": extreme_ensemble}, EXTREME_MODEL_PATH)
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
 
+    reset_model_cache()
     logger.info("model.train_models: done metrics=%s", metrics)
     return metrics
 
 
 def _load_bundle(path: Path) -> dict[str, Any]:
-    """Load a persisted model bundle, training first if the file is missing.
+    """Load a persisted model bundle, using an in-process cache to avoid repeated disk reads.
 
     Args:
         path: Filesystem path to the joblib bundle.
@@ -254,10 +257,34 @@ def _load_bundle(path: Path) -> dict[str, Any]:
     Returns:
         Dict with keys ``pipeline`` (sklearn Pipeline) and ``model`` (ensemble).
     """
+    key = str(path)
+    if key in _bundle_cache:
+        return _bundle_cache[key]
     if not path.exists():
         logger.warning("model: %s not found — training now", path.name)
         train_models()
-    return joblib.load(path)
+        _bundle_cache.clear()
+    bundle = joblib.load(path)
+    _bundle_cache[key] = bundle
+    return bundle
+
+
+def reset_model_cache() -> None:
+    """Evict all in-process model bundle cache entries.
+
+    Call after retraining so subsequent predictions load the new models.
+    """
+    _bundle_cache.clear()
+    logger.info("model.reset_model_cache: bundle cache cleared")
+
+
+def is_model_trained() -> bool:
+    """Return True if all three model files exist on disk.
+
+    Returns:
+        Boolean indicating whether persisted model files are present.
+    """
+    return TEMP_MODEL_PATH.exists() and PRECIP_MODEL_PATH.exists() and EXTREME_MODEL_PATH.exists()
 
 
 def _transform_features(features: pd.DataFrame) -> np.ndarray:
