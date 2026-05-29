@@ -105,3 +105,39 @@ class TestTelemetryEndpoint:
         client.post("/api/v1/predict", json=sample_weather_payload)
         after = client.get("/api/v1/telemetry").json()["counters"]["predictions.total"]
         assert after > before
+
+
+class TestModelFreshnessEndpoint:
+    def test_freshness_returns_200(self, client):
+        resp = client.get("/api/v1/model/freshness")
+        assert resp.status_code == 200
+
+    def test_freshness_has_required_fields(self, client):
+        data = client.get("/api/v1/model/freshness").json()
+        assert "stale_threshold_hours" in data
+
+    def test_freshness_threshold_is_24(self, client):
+        data = client.get("/api/v1/model/freshness").json()
+        assert data["stale_threshold_hours"] == 24
+
+
+class TestPurgePredictionsEndpoint:
+    def test_purge_returns_200(self, client):
+        resp = client.delete("/api/v1/predictions/purge")
+        assert resp.status_code == 200
+
+    def test_purge_has_deleted_field(self, client):
+        data = client.delete("/api/v1/predictions/purge").json()
+        assert "deleted" in data
+
+    def test_purge_has_kept_field(self, client):
+        data = client.delete("/api/v1/predictions/purge").json()
+        assert "kept" in data
+
+    def test_purge_invalid_keep_latest_400(self, client):
+        resp = client.delete("/api/v1/predictions/purge?keep_latest=0")
+        assert resp.status_code == 400
+
+    def test_purge_custom_keep_latest(self, client):
+        data = client.delete("/api/v1/predictions/purge?keep_latest=500").json()
+        assert data["kept"] == 500
