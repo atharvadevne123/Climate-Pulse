@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import argparse
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 
@@ -23,7 +24,7 @@ def seed(n_stations: int = 5, n_days: int = 90) -> int:
     db = SessionLocal()
     rng = np.random.default_rng(0)
     station_ids = [f"STATION_{i:03d}" for i in range(n_stations)]
-    base_time = datetime.utcnow() - timedelta(days=n_days)
+    base_time = datetime.now(UTC) - timedelta(days=n_days)
     records_created = 0
 
     for station_id in station_ids:
@@ -51,5 +52,9 @@ def seed(n_stations: int = 5, n_days: int = 90) -> int:
 
 
 if __name__ == "__main__":
-    total = seed()
-    print(f"Seeded {total} weather observations.")
+    parser = argparse.ArgumentParser(description="Seed Climate-Pulse database with synthetic observations.")
+    parser.add_argument("--stations", type=int, default=5, help="Number of stations to seed (default: 5)")
+    parser.add_argument("--days", type=int, default=90, help="Number of days of history per station (default: 90)")
+    args = parser.parse_args()
+    total = seed(n_stations=args.stations, n_days=args.days)
+    print(f"Seeded {total} weather observations ({args.stations} stations × {args.days} days).")
