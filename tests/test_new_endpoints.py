@@ -141,3 +141,40 @@ class TestPurgePredictionsEndpoint:
     def test_purge_custom_keep_latest(self, client):
         data = client.delete("/api/v1/predictions/purge?keep_latest=500").json()
         assert data["kept"] == 500
+
+
+class TestCacheStatsEndpoint:
+    def test_cache_stats_returns_200(self, client):
+        resp = client.get("/api/v1/cache/stats")
+        assert resp.status_code == 200
+
+    def test_cache_stats_has_size(self, client):
+        data = client.get("/api/v1/cache/stats").json()
+        assert "size" in data
+
+    def test_cache_stats_has_hit_rate(self, client):
+        data = client.get("/api/v1/cache/stats").json()
+        assert "hit_rate" in data
+
+    def test_cache_stats_size_non_negative(self, client):
+        data = client.get("/api/v1/cache/stats").json()
+        assert data["size"] >= 0
+
+
+class TestDriftSummaryEndpoint:
+    def test_drift_summary_returns_200(self, client):
+        resp = client.get("/api/v1/drift/summary")
+        assert resp.status_code == 200
+
+    def test_drift_summary_has_total_reports(self, client):
+        data = client.get("/api/v1/drift/summary").json()
+        assert "total_reports" in data
+
+    def test_drift_summary_has_drift_detected_count(self, client):
+        data = client.get("/api/v1/drift/summary").json()
+        assert "drift_detected_count" in data
+
+    def test_drift_summary_counts_non_negative(self, client):
+        data = client.get("/api/v1/drift/summary").json()
+        assert data["total_reports"] >= 0
+        assert data["drift_detected_count"] >= 0
