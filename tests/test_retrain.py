@@ -26,3 +26,25 @@ class TestRetrainEndpoint:
     def test_retrain_n_training_samples_positive(self, client):
         data = client.post("/api/v1/retrain").json()
         assert data.get("n_training_samples", 0) > 0
+
+
+class TestRetrainMetrics:
+    def test_retrain_metrics_n_training_samples(self, client):
+        data = client.post("/api/v1/retrain").json()
+        assert data.get("n_training_samples", 0) >= 100
+
+    def test_retrain_metrics_n_features_positive(self, client):
+        data = client.post("/api/v1/retrain").json()
+        assert data.get("n_features", 0) > 0
+
+    def test_retrain_temp_r2_std_non_negative(self, client):
+        data = client.post("/api/v1/retrain").json()
+        assert data.get("temp_r2_std", -1) >= 0
+
+    def test_retrain_auc_mean_at_least_half(self, client):
+        data = client.post("/api/v1/retrain").json()
+        assert data.get("extreme_auc_mean", 0) >= 0.5
+
+    def test_retrain_model_version_string(self, client):
+        data = client.post("/api/v1/retrain").json()
+        assert isinstance(data.get("model_version"), str)
