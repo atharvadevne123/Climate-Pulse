@@ -106,3 +106,62 @@ class TestCacheTtlVariants:
         cache_set("renew", "new", ttl=60)
         time.sleep(0.10)
         assert cache_get("renew") == "new"
+
+
+class TestCacheGetOrSet:
+    def test_calls_loader_on_miss(self):
+        from app.cache import cache_get_or_set
+        result = cache_get_or_set("new_key", lambda: 42)
+        assert result == 42
+
+    def test_returns_cached_on_hit(self):
+        from app.cache import cache_get_or_set
+        cache_set("existing", "original")
+        result = cache_get_or_set("existing", lambda: "should_not_be_called")
+        assert result == "original"
+
+    def test_loader_called_once_only(self):
+        from app.cache import cache_get_or_set
+        call_count = [0]
+
+        def loader():
+            call_count[0] += 1
+            return "computed"
+
+        cache_get_or_set("loader_key", loader)
+        cache_get_or_set("loader_key", loader)
+        assert call_count[0] == 1
+
+    @pytest.mark.parametrize("value", [0, "", [], {"a": 1}, 3.14])
+    def test_caches_various_types(self, value):
+        from app.cache import cache_get_or_set
+        key = f"typed_{id(value)}"
+        result = cache_get_or_set(key, lambda: value)
+        assert result == value
+
+
+class TestCacheStats:
+    def test_stats_initial_zero(self):
+        from app.cache import cache_stats
+        # Stats counts may have prior hits from other tests in same process
+        stats = cache_stats()
+        assert "size" in stats
+        assert "total_hits" in stats
+        assert "total_misses" in stats
+        assert "hit_rate" in stats
+
+    def test_stats_size_reflects_cache(self):
+        from app.cache import cache_stats
+        cache_set("a", 1)
+        cache_set("b", 2)
+        stats = cache_stats()
+        assert stats["size"] == 2
+
+    def test_hit_rate_increases_on_hits(self):
+        from app.cache import cache_hit_rate
+        cache_set("hr_key", "value")
+        cache_get("hr_key")
+        cache_get("hr_key")
+        rate = cache_hit_rate("hr_key")
+        assert rate > 0.0
+        assert rate <= 1.0
