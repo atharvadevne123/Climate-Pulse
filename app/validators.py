@@ -124,6 +124,40 @@ def validate_prediction_output(predictions: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_month_value(month: float) -> list[str]:
+    """Return validation errors for a month value (must be 1–12).
+
+    Args:
+        month: Month as a float (1.0 = January, 12.0 = December).
+
+    Returns:
+        List of error strings; empty if valid.
+    """
+    errors: list[str] = []
+    if not isinstance(month, int | float):
+        errors.append(f"month must be numeric, got {type(month).__name__}")
+    elif not (1.0 <= float(month) <= 12.0):
+        errors.append(f"month {month} is out of range [1, 12]")
+    return errors
+
+
+def validate_pressure_value(pressure: float) -> list[str]:
+    """Return validation errors for a pressure reading (870–1085 hPa).
+
+    Args:
+        pressure: Atmospheric pressure in hPa.
+
+    Returns:
+        List of error strings; empty if valid.
+    """
+    errors: list[str] = []
+    if not isinstance(pressure, int | float):
+        errors.append(f"pressure must be numeric, got {type(pressure).__name__}")
+    elif not (870.0 <= float(pressure) <= 1085.0):
+        errors.append(f"pressure {pressure} is outside valid range [870, 1085] hPa")
+    return errors
+
+
 def validate_cross_field(data: dict[str, Any]) -> list[str]:
     """Return cross-field validation errors that cannot be caught field-by-field.
 
