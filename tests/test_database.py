@@ -216,11 +216,14 @@ class TestDatabaseHelpers:
 class TestNewDatabaseHelpers:
     def test_get_oldest_prediction_empty(self, db):
         from app.database import get_oldest_prediction
+
         assert get_oldest_prediction(db) is None
 
     def test_get_oldest_prediction_returns_first(self, db):
-        from app.database import get_oldest_prediction
         from datetime import UTC, datetime, timedelta
+
+        from app.database import get_oldest_prediction
+
         for i in range(3):
             db.add(
                 PredictionLog(
@@ -241,10 +244,12 @@ class TestNewDatabaseHelpers:
 
     def test_get_prediction_count_by_station_zero(self, db):
         from app.database import get_prediction_count_by_station
+
         assert get_prediction_count_by_station(db, "GHOST_STATION") == 0
 
     def test_get_prediction_count_by_station_counts_correctly(self, db):
         from app.database import get_prediction_count_by_station
+
         for i in range(4):
             db.add(
                 PredictionLog(
@@ -264,6 +269,7 @@ class TestNewDatabaseHelpers:
     @pytest.mark.parametrize("count", [1, 3, 7])
     def test_get_prediction_count_by_station_parametrized(self, db, count):
         from app.database import get_prediction_count_by_station
+
         station = f"PARAM_ST_{count}"
         for i in range(count):
             db.add(

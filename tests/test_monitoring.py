@@ -195,12 +195,14 @@ class TestGetPredictionByCorrelationId:
 class TestGetStationStats:
     def test_empty_station_returns_zero_count(self, db):
         from app.monitoring import get_station_stats
+
         result = get_station_stats(db, "EMPTY_STATION")
         assert result["count"] == 0
         assert result["station_id"] == "EMPTY_STATION"
 
     def test_station_with_predictions_has_stats(self, db):
         from app.monitoring import get_station_stats
+
         for i in range(5):
             log_prediction(
                 db=db,
@@ -218,6 +220,7 @@ class TestGetStationStats:
     @pytest.mark.parametrize("n", [1, 3, 10])
     def test_station_count_matches_insertions(self, db, n):
         from app.monitoring import get_station_stats
+
         station = f"COUNT_ST_{n}"
         for i in range(n):
             log_prediction(
@@ -235,11 +238,13 @@ class TestGetStationStats:
 class TestGetDriftCountByFeature:
     def test_empty_returns_empty_dict(self, db):
         from app.monitoring import get_drift_count_by_feature
+
         result = get_drift_count_by_feature(db)
         assert isinstance(result, dict)
 
     def test_counts_drift_events(self, db):
         from app.monitoring import get_drift_count_by_feature
+
         for _ in range(3):
             log_drift_report(db, "temperature", {"ks_statistic": 0.5, "p_value": 0.01, "drift_detected": True})
         for _ in range(2):
@@ -250,6 +255,7 @@ class TestGetDriftCountByFeature:
 
     def test_non_drift_events_not_counted(self, db):
         from app.monitoring import get_drift_count_by_feature
+
         log_drift_report(db, "pressure", {"ks_statistic": 0.05, "p_value": 0.80, "drift_detected": False})
         result = get_drift_count_by_feature(db)
         assert result.get("pressure", 0) == 0
@@ -258,6 +264,7 @@ class TestGetDriftCountByFeature:
 class TestPurgeOldPredictions:
     def test_no_purge_when_below_threshold(self, db):
         from app.monitoring import purge_old_predictions
+
         for i in range(5):
             log_prediction(
                 db=db,
@@ -272,6 +279,7 @@ class TestPurgeOldPredictions:
 
     def test_purges_excess_records(self, db):
         from app.monitoring import purge_old_predictions
+
         for i in range(10):
             log_prediction(
                 db=db,

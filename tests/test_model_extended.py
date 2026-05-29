@@ -210,12 +210,17 @@ class TestTransformFeatures:
         assert np.isfinite(result).all()
 
 
-class TestPredictEdgeCases:
+class TestPredictExtremeInputs:
     def _payload(self, **overrides):
         base = {
-            "temperature": 20.0, "precipitation": 2.0, "humidity": 60.0,
-            "pressure": 1013.0, "wind_speed": 15.0, "cloud_cover": 30.0,
-            "month": 6.0, "day_of_year": 160.0,
+            "temperature": 20.0,
+            "precipitation": 2.0,
+            "humidity": 60.0,
+            "pressure": 1013.0,
+            "wind_speed": 15.0,
+            "cloud_cover": 30.0,
+            "month": 6.0,
+            "day_of_year": 160.0,
         }
         base.update(overrides)
         return pd.DataFrame([base])

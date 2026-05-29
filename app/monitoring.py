@@ -143,9 +143,9 @@ def get_station_stats(db: Session, station_id: str) -> dict[str, Any]:
     if not logs:
         return {"station_id": station_id, "count": 0}
 
-    temps = [l.predicted_temp for l in logs if l.predicted_temp is not None]
-    precips = [l.predicted_precip for l in logs if l.predicted_precip is not None]
-    extremes = [l.extreme_event_prob for l in logs if l.extreme_event_prob is not None]
+    temps = [rec.predicted_temp for rec in logs if rec.predicted_temp is not None]
+    precips = [rec.predicted_precip for rec in logs if rec.predicted_precip is not None]
+    extremes = [rec.extreme_event_prob for rec in logs if rec.extreme_event_prob is not None]
 
     def _stats(values: list[float]) -> dict[str, float]:
         if not values:
@@ -195,19 +195,11 @@ def purge_old_predictions(db: Session, keep_latest: int = 10000) -> int:
     if total <= keep_latest:
         return 0
     cutoff_id_row = (
-        db.query(PredictionLog)
-        .order_by(PredictionLog.timestamp.desc())
-        .offset(keep_latest - 1)
-        .limit(1)
-        .first()
+        db.query(PredictionLog).order_by(PredictionLog.timestamp.desc()).offset(keep_latest - 1).limit(1).first()
     )
     if cutoff_id_row is None:
         return 0
-    deleted = (
-        db.query(PredictionLog)
-        .filter(PredictionLog.id < cutoff_id_row.id)
-        .delete(synchronize_session=False)
-    )
+    deleted = db.query(PredictionLog).filter(PredictionLog.id < cutoff_id_row.id).delete(synchronize_session=False)
     db.commit()
     logger.info("monitoring.purge_old_predictions: deleted=%d", deleted)
     return deleted
