@@ -205,6 +205,48 @@ def purge_old_predictions(db: Session, keep_latest: int = 10000) -> int:
     return deleted
 
 
+def format_station_report(stats: dict) -> str:
+    """Render a human-readable summary string from a station stats dict.
+
+    Args:
+        stats: Dict as returned by ``get_station_stats()``.
+
+    Returns:
+        Multi-line string with station ID, prediction count, and temperature range.
+    """
+    station_id = stats.get("station_id", "unknown")
+    count = stats.get("count", 0)
+    if count == 0:
+        return f"Station {station_id}: no predictions recorded."
+    temp = stats.get("temperature", {})
+    lines = [
+        f"Station: {station_id}",
+        f"  Predictions: {count}",
+        f"  Temp avg/min/max: {temp.get('avg', 0.0):.2f} / {temp.get('min', 0.0):.2f} / {temp.get('max', 0.0):.2f} °C",
+    ]
+    precip = stats.get("precipitation")
+    if precip:
+        lines.append(f"  Precip avg: {precip.get('avg', 0.0):.3f} mm")
+    return "\n".join(lines)
+
+
+def get_total_predictions_by_model_version(db: Session) -> dict[str, int]:
+    """Return prediction counts grouped by model version.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Dict mapping model_version string to prediction count.
+    """
+    records = db.query(PredictionLog).all()
+    counts: dict[str, int] = {}
+    for record in records:
+        version = record.model_version or "unknown"
+        counts[version] = counts.get(version, 0) + 1
+    return counts
+
+
 def compute_feature_drift_from_db(
     db: Session,
     feature_name: str,
