@@ -210,3 +210,13 @@ def get_feature_names() -> list[str]:
         List of feature name strings as expected by the prediction pipeline.
     """
     return list(FEATURE_COLUMNS)
+
+
+def get_pipeline_stage_names() -> list[str]:
+    """Return the names of all stages in the feature pipeline, excluding the final scaler.
+
+    Returns:
+        List of stage name strings (e.g. ``["lag_features", "rolling_stats", ...]``).
+    """
+    pipeline = build_feature_pipeline()
+    return [name for name, _ in pipeline.steps if name != "scaler"]
