@@ -103,3 +103,80 @@ class TestRecentPredictions:
     def test_recent_predictions_limit_too_high(self, client):
         resp = client.get("/api/v1/predictions/recent?limit=9999")
         assert resp.status_code == 400
+
+
+class TestModelInfo:
+    def test_model_info_returns_200(self, client):
+        resp = client.get("/api/v1/model/info")
+        assert resp.status_code == 200
+
+    def test_model_info_has_version(self, client):
+        data = client.get("/api/v1/model/info").json()
+        assert "model_version" in data
+
+    def test_model_info_has_pipeline_stages(self, client):
+        data = client.get("/api/v1/model/info").json()
+        assert "pipeline_stages" in data
+        assert isinstance(data["pipeline_stages"], list)
+
+    def test_model_info_has_input_features(self, client):
+        data = client.get("/api/v1/model/info").json()
+        assert "input_features" in data
+        assert "temperature" in data["input_features"]
+
+    def test_model_info_has_is_trained_flag(self, client):
+        data = client.get("/api/v1/model/info").json()
+        assert "is_trained" in data
+        assert isinstance(data["is_trained"], bool)
+
+
+class TestStationStats:
+    def test_empty_station_returns_200(self, client):
+        resp = client.get("/api/v1/stations/UNKNOWN_XYZ/stats")
+        assert resp.status_code == 200
+
+    def test_empty_station_has_zero_count(self, client):
+        data = client.get("/api/v1/stations/NOPREDICTIONS/stats").json()
+        assert data["count"] == 0
+
+    def test_station_with_predictions_has_stats(self, client, sample_weather_payload):
+        client.post("/api/v1/predict", json={**sample_weather_payload, "station_id": "STATS_TEST"})
+        data = client.get("/api/v1/stations/STATS_TEST/stats").json()
+        assert data["count"] >= 1
+
+
+class TestCacheStatsEndpoint:
+    def test_cache_stats_returns_200(self, client):
+        resp = client.get("/api/v1/cache/stats")
+        assert resp.status_code == 200
+
+    def test_cache_stats_has_required_fields(self, client):
+        data = client.get("/api/v1/cache/stats").json()
+        assert "size" in data
+        assert "total_hits" in data
+        assert "hit_rate" in data
+
+
+class TestDriftSummaryEndpoint:
+    def test_drift_summary_returns_200(self, client):
+        resp = client.get("/api/v1/drift/summary")
+        assert resp.status_code == 200
+
+    def test_drift_summary_has_counts_field(self, client):
+        data = client.get("/api/v1/drift/summary").json()
+        assert "drift_counts_by_feature" in data
+        assert isinstance(data["drift_counts_by_feature"], dict)
+
+
+class TestVersionEndpoint:
+    def test_version_returns_200(self, client):
+        resp = client.get("/api/v1/version")
+        assert resp.status_code == 200
+
+    def test_version_has_api_version(self, client):
+        data = client.get("/api/v1/version").json()
+        assert "api_version" in data
+
+    def test_version_has_model_version(self, client):
+        data = client.get("/api/v1/version").json()
+        assert "model_version" in data
