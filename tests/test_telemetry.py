@@ -89,3 +89,57 @@ class TestGetCounter:
         increment("acc_test", 3)
         increment("acc_test", 4)
         assert get_counter("acc_test") == 7
+
+
+class TestGetCounterNames:
+    def test_returns_list(self):
+        from app.telemetry import get_counter_names
+        result = get_counter_names()
+        assert isinstance(result, list)
+
+    def test_includes_incremented_counter(self):
+        from app.telemetry import get_counter_names
+        increment("my_test_counter")
+        assert "my_test_counter" in get_counter_names()
+
+    def test_sorted_alphabetically(self):
+        from app.telemetry import get_counter_names
+        increment("zzz_counter")
+        increment("aaa_counter")
+        names = get_counter_names()
+        assert names == sorted(names)
+
+
+class TestSnapshot:
+    def test_returns_dict(self):
+        from app.telemetry import snapshot
+        result = snapshot()
+        assert isinstance(result, dict)
+
+    def test_contains_counters_and_histograms(self):
+        from app.telemetry import snapshot
+        result = snapshot()
+        assert "counters" in result
+        assert "histograms" in result
+
+    def test_snapshot_is_copy(self):
+        from app.telemetry import snapshot
+        increment("snap_counter")
+        s1 = snapshot()
+        increment("snap_counter")
+        s2 = snapshot()
+        assert s2["counters"]["snap_counter"] > s1["counters"]["snap_counter"]
+
+    def test_histogram_samples_in_snapshot(self):
+        from app.telemetry import snapshot
+        record_latency("snap_metric", 42.0)
+        result = snapshot()
+        assert "snap_metric" in result["histograms"]
+        assert 42.0 in result["histograms"]["snap_metric"]
+
+    @pytest.mark.parametrize("metric", ["requests", "errors", "retrains"])
+    def test_multiple_counters_in_snapshot(self, metric):
+        from app.telemetry import snapshot
+        increment(metric, 5)
+        result = snapshot()
+        assert result["counters"].get(metric, 0) >= 5
