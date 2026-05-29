@@ -59,3 +59,43 @@ class TestStructuredFormatterThreadId:
         record.model_version = "2.0.0"
         result = fmt.format(record)
         assert "model_version=2.0.0" in result
+
+
+class TestStructuredFormatterParametrized:
+    def test_all_structured_fields_recognized(self):
+        from app.logging_config import STRUCTURED_FIELDS, StructuredFormatter
+        fmt = StructuredFormatter()
+        record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
+        for field in STRUCTURED_FIELDS:
+            setattr(record, field, f"{field}_value")
+        result = fmt.format(record)
+        for field in STRUCTURED_FIELDS:
+            assert f"{field}_value" in result
+
+    def test_format_with_all_log_levels(self):
+        import pytest
+        from app.logging_config import StructuredFormatter
+
+        @pytest.mark.parametrize("level", [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR])
+        def inner(level):
+            fmt = StructuredFormatter()
+            record = logging.LogRecord("test", level, "", 0, "msg", (), None)
+            result = fmt.format(record)
+            assert "msg" in result
+
+        for level in [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR]:
+            fmt = StructuredFormatter()
+            record = logging.LogRecord("test", level, "", 0, "msg", (), None)
+            result = fmt.format(record)
+            assert "msg" in result
+
+    def test_configure_logging_accepts_lowercase(self):
+        from app.logging_config import configure_logging
+        configure_logging("info")
+        configure_logging("INFO")  # restore to INFO
+
+    def test_configure_logging_debug_level(self):
+        from app.logging_config import configure_logging
+        configure_logging("DEBUG")
+        assert logging.getLogger().level == logging.DEBUG
+        configure_logging("INFO")  # restore
