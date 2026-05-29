@@ -100,3 +100,28 @@ class TestStructuredFormatterParametrized:
         configure_logging("DEBUG")
         assert logging.getLogger().level == logging.DEBUG
         configure_logging("INFO")  # restore
+
+
+class TestStructuredFormatterEdgeCases:
+    def test_empty_message_still_formats(self):
+        from app.logging_config import StructuredFormatter
+        fmt = StructuredFormatter()
+        record = logging.LogRecord("test", logging.INFO, "", 0, "", (), None)
+        result = fmt.format(record)
+        assert isinstance(result, str)
+
+    def test_none_correlation_id_handled(self):
+        from app.logging_config import StructuredFormatter
+        fmt = StructuredFormatter()
+        record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
+        record.correlation_id = None
+        result = fmt.format(record)
+        assert isinstance(result, str)
+
+    def test_formatter_is_deterministic(self):
+        from app.logging_config import StructuredFormatter
+        fmt = StructuredFormatter()
+        record = logging.LogRecord("test", logging.INFO, "", 0, "deterministic", (), None)
+        r1 = fmt.format(record)
+        r2 = fmt.format(record)
+        assert r1 == r2
