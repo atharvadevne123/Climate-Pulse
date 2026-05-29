@@ -234,3 +234,73 @@ class TestBatchIter:
         items = list(range(n))
         result = [x for batch in batch_iter(items, size) for x in batch]
         assert result == items
+
+
+class TestMovingAverage:
+    def test_window_one_equals_input(self):
+        from app.utils import moving_average
+
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert moving_average(values, 1) == values
+
+    def test_window_equals_length(self):
+        from app.utils import moving_average
+
+        values = [1.0, 2.0, 3.0]
+        result = moving_average(values, 3)
+        assert result[-1] == pytest.approx(2.0)
+
+    def test_output_same_length_as_input(self):
+        from app.utils import moving_average
+
+        values = list(range(10))
+        result = moving_average([float(v) for v in values], 3)
+        assert len(result) == 10
+
+    def test_invalid_window_raises(self):
+        from app.utils import moving_average
+
+        with pytest.raises(ValueError):
+            moving_average([1.0, 2.0], 0)
+
+    def test_empty_input(self):
+        from app.utils import moving_average
+
+        assert moving_average([], 3) == []
+
+    @pytest.mark.parametrize("window", [1, 2, 5])
+    def test_window_parametrized(self, window):
+        from app.utils import moving_average
+
+        values = [float(i) for i in range(10)]
+        result = moving_average(values, window)
+        assert len(result) == len(values)
+        assert all(isinstance(v, float) for v in result)
+
+
+class TestSafeDivide:
+    def test_normal_division(self):
+        from app.utils import safe_divide
+
+        assert safe_divide(10.0, 2.0) == pytest.approx(5.0)
+
+    def test_zero_denominator_returns_default(self):
+        from app.utils import safe_divide
+
+        assert safe_divide(5.0, 0.0) == 0.0
+
+    def test_custom_default(self):
+        from app.utils import safe_divide
+
+        assert safe_divide(5.0, 0.0, default=-1.0) == pytest.approx(-1.0)
+
+    def test_negative_numerator(self):
+        from app.utils import safe_divide
+
+        assert safe_divide(-10.0, 2.0) == pytest.approx(-5.0)
+
+    @pytest.mark.parametrize("num,den,expected", [(6.0, 3.0, 2.0), (0.0, 5.0, 0.0), (9.0, 4.0, 2.25)])
+    def test_parametrized(self, num, den, expected):
+        from app.utils import safe_divide
+
+        assert safe_divide(num, den) == pytest.approx(expected)
