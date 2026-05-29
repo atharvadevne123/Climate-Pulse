@@ -1,4 +1,4 @@
-.PHONY: install test test-cov lint lint-fix format type-check security run diagram clean docker-build
+.PHONY: install test test-cov lint lint-fix format type-check security run diagram clean docker-build benchmark retrain db-migrate
 
 install:
 	pip install -r requirements.txt
@@ -41,7 +41,16 @@ diagram:
 docker-build:
 	docker build -t climate-pulse:latest .
 
+benchmark:
+	python scripts/load_test.py
+
+retrain:
+	curl -s -X POST http://localhost:8000/api/v1/retrain | python3 -m json.tool
+
+db-migrate:
+	alembic upgrade head
+
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -name "*.pyc" -delete
-	rm -rf .pytest_cache dist build *.egg-info htmlcov .coverage coverage.xml
+	rm -rf .pytest_cache dist build *.egg-info htmlcov .coverage coverage.xml models/*.joblib models/metrics.json
