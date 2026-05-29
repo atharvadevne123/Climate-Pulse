@@ -81,3 +81,41 @@ class TestSettingsEdgeCases:
         from app.config import Settings
         s = Settings()
         assert s.rate_limit_per_minute >= 1
+
+
+class TestSettingsPoolConfig:
+    def test_db_pool_size_positive(self):
+        from app.config import Settings
+        s = Settings()
+        assert s.db_pool_size > 0
+
+    def test_db_max_overflow_non_negative(self):
+        from app.config import Settings
+        s = Settings()
+        assert s.db_max_overflow >= 0
+
+    def test_db_pool_timeout_positive(self):
+        from app.config import Settings
+        s = Settings()
+        assert s.db_pool_timeout > 0
+
+    def test_db_pool_size_is_int(self):
+        from app.config import Settings
+        s = Settings()
+        assert isinstance(s.db_pool_size, int)
+
+    def test_db_max_overflow_is_int(self):
+        from app.config import Settings
+        s = Settings()
+        assert isinstance(s.db_max_overflow, int)
+
+    def test_app_version_is_1_2_0(self):
+        from app.config import Settings
+        s = Settings()
+        assert s.app_version == "1.2.0"
+
+    @pytest.mark.parametrize("field", ["db_pool_size", "db_max_overflow", "db_pool_timeout"])
+    def test_pool_fields_exist(self, field):
+        from app.config import Settings
+        s = Settings()
+        assert hasattr(s, field)
