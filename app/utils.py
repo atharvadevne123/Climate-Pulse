@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Any
+from collections.abc import Generator, Iterable
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 def clamp(value: float, lo: float, hi: float) -> float:
@@ -76,3 +79,62 @@ def safe_float(value: Any, default: float = 0.0) -> float:
     except (TypeError, ValueError):
         logger.debug("utils.safe_float: could not convert %r to float", value)
         return default
+
+
+def percentage_change(old: float, new: float) -> float:
+    """Return the percentage change from *old* to *new*.
+
+    Args:
+        old: Reference value (denominator).
+        new: New value (numerator target).
+
+    Returns:
+        Percentage change as a float (e.g. 10.0 means +10 %). Returns 0.0
+        when *old* is zero to avoid division errors.
+    """
+    if old == 0.0:
+        logger.debug("utils.percentage_change: old=0, returning 0.0")
+        return 0.0
+    return (new - old) / abs(old) * 100.0
+
+
+def format_duration(seconds: float) -> str:
+    """Format a duration in seconds as a human-readable string.
+
+    Args:
+        seconds: Duration in seconds (non-negative).
+
+    Returns:
+        String such as ``"2h 3m 5s"`` or ``"45.3s"`` for sub-minute durations.
+    """
+    seconds = max(0.0, seconds)
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = seconds % 60
+    if hours > 0:
+        return f"{hours}h {minutes}m {secs:.0f}s"
+    if minutes > 0:
+        return f"{minutes}m {secs:.0f}s"
+    return f"{secs:.1f}s"
+
+
+def batch_iter(iterable: Iterable[T], batch_size: int) -> Generator[list[T], None, None]:
+    """Yield successive fixed-size batches from *iterable*.
+
+    Args:
+        iterable: Any iterable to chunk.
+        batch_size: Maximum number of items per batch (must be >= 1).
+
+    Yields:
+        Lists of up to *batch_size* items.
+    """
+    if batch_size < 1:
+        raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+    batch: list[T] = []
+    for item in iterable:
+        batch.append(item)
+        if len(batch) == batch_size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
