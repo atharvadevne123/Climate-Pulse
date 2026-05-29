@@ -15,3 +15,7 @@ venv/
 *.joblib
 *.pkl
 node_modules/
+htmlcov/
+.coverage
+coverage.xml
+*.prof
