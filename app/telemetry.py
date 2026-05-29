@@ -83,6 +83,23 @@ def snapshot() -> dict[str, Any]:
     }
 
 
+def reset_counters() -> None:
+    """Clear only the counters dict, leaving histogram data intact."""
+    _counters.clear()
+    logger.debug("telemetry.reset_counters: counters cleared")
+
+
+def increment_batch(metrics: dict[str, int]) -> None:
+    """Increment multiple counters in a single call.
+
+    Args:
+        metrics: Mapping of counter name to increment amount.
+    """
+    for metric, value in metrics.items():
+        _counters[metric] += value
+    logger.debug("telemetry.increment_batch: updated %d counters", len(metrics))
+
+
 class Timer:
     """Context manager that records elapsed time as a latency sample."""
 
