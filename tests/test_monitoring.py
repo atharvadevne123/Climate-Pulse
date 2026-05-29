@@ -291,3 +291,83 @@ class TestPurgeOldPredictions:
             )
         deleted = purge_old_predictions(db, keep_latest=5)
         assert deleted >= 0  # At least 0 deleted (exact count depends on prior rows)
+
+
+class TestFormatStationReport:
+    def test_empty_station_report(self):
+        from app.monitoring import format_station_report
+
+        report = format_station_report({"station_id": "EMPTY", "count": 0})
+        assert "no predictions" in report.lower()
+
+    def test_report_contains_station_id(self, db):
+        from app.monitoring import format_station_report, get_station_stats
+
+        for i in range(3):
+            log_prediction(
+                db=db,
+                correlation_id=f"fmt-{i}",
+                station_id="FMT_STATION",
+                features={},
+                predictions={"predicted_temp": float(20 + i), "predicted_precip": 1.0, "extreme_event_prob": 0.1},
+                model_version="1.0.0",
+            )
+        stats = get_station_stats(db, "FMT_STATION")
+        report = format_station_report(stats)
+        assert "FMT_STATION" in report
+
+    def test_report_contains_prediction_count(self, db):
+        from app.monitoring import format_station_report, get_station_stats
+
+        for i in range(4):
+            log_prediction(
+                db=db,
+                correlation_id=f"cnt-fmt-{i}",
+                station_id="CNT_FMT",
+                features={},
+                predictions={"predicted_temp": 22.0, "predicted_precip": 0.5, "extreme_event_prob": 0.05},
+                model_version="1.0.0",
+            )
+        stats = get_station_stats(db, "CNT_FMT")
+        report = format_station_report(stats)
+        assert "4" in report
+
+    def test_report_is_string(self, db):
+        from app.monitoring import format_station_report, get_station_stats
+
+        stats = get_station_stats(db, "NONEXISTENT_STATION_XYZ")
+        report = format_station_report(stats)
+        assert isinstance(report, str)
+
+
+class TestGetTotalPredictionsByModelVersion:
+    def test_empty_returns_empty_dict(self, db):
+        from app.monitoring import get_total_predictions_by_model_version
+
+        result = get_total_predictions_by_model_version(db)
+        assert isinstance(result, dict)
+
+    def test_counts_by_version(self, db):
+        from app.monitoring import get_total_predictions_by_model_version
+
+        for i in range(3):
+            log_prediction(
+                db=db,
+                correlation_id=f"v1-{i}",
+                station_id="VER_ST",
+                features={},
+                predictions={"predicted_temp": 20.0, "predicted_precip": 0.0, "extreme_event_prob": 0.0},
+                model_version="1.0.0",
+            )
+        for i in range(2):
+            log_prediction(
+                db=db,
+                correlation_id=f"v2-{i}",
+                station_id="VER_ST",
+                features={},
+                predictions={"predicted_temp": 21.0, "predicted_precip": 0.0, "extreme_event_prob": 0.0},
+                model_version="2.0.0",
+            )
+        result = get_total_predictions_by_model_version(db)
+        assert result.get("1.0.0", 0) >= 3
+        assert result.get("2.0.0", 0) >= 2
