@@ -12,20 +12,29 @@
 - `cache_get_or_set()` convenience function with hit/miss tracking
 - `cache_stats()` and `cache_hit_rate()` cache observability functions
 - `get_station_stats()` aggregate summary in monitoring module
-- `get_drift_count_by_feature()` grouping function in monitoring module
+- `get_drift_count_by_feature()` and `format_station_report()` in monitoring module
+- `get_total_predictions_by_model_version()` version-grouped count in monitoring module
 - `purge_old_predictions()` maintenance function in monitoring module
 - `reset_model_cache()` and `is_model_trained()` in model module
 - In-process model bundle cache to avoid repeated joblib.load() on every predict call
 - `percentage_change()`, `format_duration()`, `batch_iter()` utility functions
+- `moving_average()` and `safe_divide()` utility functions
 - `validate_station_id_format()` and `validate_prediction_output()` validators
-- `get_counter_names()` and `snapshot()` in telemetry module
-- `get_oldest_prediction()` and `get_prediction_count_by_station()` DB helpers
+- `validate_month_value()` and `validate_pressure_value()` validators
+- `get_counter_names()`, `snapshot()`, `reset_counters()`, `increment_batch()` in telemetry
+- `get_oldest_prediction()`, `get_prediction_count_by_station()`, `get_predictions_between()` DB helpers
+- `get_pipeline_stage_names()` in features module
+- `db_pool_size`, `db_max_overflow`, `db_pool_timeout` added to Settings
 - Alembic migration 002: composite indexes on station+timestamp and feature+timestamp
-- `benchmark`, `retrain`, `db-migrate` Makefile targets
-- 150+ additional tests across 12 test files
+- `render_as_batch=True` in alembic env.py for SQLite compatibility
+- `benchmark`, `retrain`, `db-migrate`, `profile`, `audit` Makefile targets
+- 200+ additional tests across 14 test files
+- `--n-samples` CLI arg to scripts/evaluate.py
+- `--stations` and `--days` CLI args to scripts/seed_data.py
 
 ### Fixed
 - Deprecated `datetime.utcnow` in ORM column defaults replaced with lambda `datetime.now(UTC)`
+- Deprecated `datetime.utcnow()` in scripts/seed_data.py replaced with `datetime.now(UTC)`
 - Ruff format compliance for all source files
 
 ## [1.1.0] - 2026-05-28
