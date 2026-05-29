@@ -59,6 +59,30 @@ def get_counter(metric: str) -> int:
     return _counters.get(metric, 0)
 
 
+def get_counter_names() -> list[str]:
+    """Return the names of all currently tracked counters.
+
+    Returns:
+        Sorted list of counter name strings.
+    """
+    return sorted(_counters.keys())
+
+
+def snapshot() -> dict[str, Any]:
+    """Return a point-in-time copy of all telemetry data.
+
+    Unlike ``get_stats()``, this returns raw counter values and histogram
+    sample lists — useful for testing or persistent metrics export.
+
+    Returns:
+        Dict with ``counters`` (dict) and ``histograms`` (dict of lists).
+    """
+    return {
+        "counters": dict(_counters),
+        "histograms": {k: list(v) for k, v in _histograms.items()},
+    }
+
+
 class Timer:
     """Context manager that records elapsed time as a latency sample."""
 
