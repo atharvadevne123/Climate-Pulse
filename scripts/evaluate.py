@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import logging
 import os
 import sys
@@ -24,15 +25,22 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 
-def evaluate() -> dict:
-    """Run evaluation on 500 held-out synthetic samples."""
-    X, y_temp, y_precip, y_extreme = _generate_synthetic_training_data(n=500)
+def evaluate(n_samples: int = 500) -> dict:
+    """Run evaluation on held-out synthetic samples.
+
+    Args:
+        n_samples: Number of synthetic test samples to generate (default 500).
+
+    Returns:
+        Dict with regression and classification metrics.
+    """
+    logger.info("evaluate: generating %d held-out samples", n_samples)
+    X, y_temp, y_precip, y_extreme = _generate_synthetic_training_data(n=n_samples)
 
     temp_bundle = _load_bundle(TEMP_MODEL_PATH)
     precip_bundle = _load_bundle(PRECIP_MODEL_PATH)
     extreme_bundle = _load_bundle(EXTREME_MODEL_PATH)
 
-    # Re-transform with the trained pipeline
     X_eval = temp_bundle["pipeline"].transform(X)
 
     temp_preds = temp_bundle["model"].predict(X_eval)
@@ -55,5 +63,8 @@ def evaluate() -> dict:
 
 
 if __name__ == "__main__":
-    print("=== Climate-Pulse Evaluation ===")
-    evaluate()
+    parser = argparse.ArgumentParser(description="Evaluate Climate-Pulse models on synthetic held-out data.")
+    parser.add_argument("--n-samples", type=int, default=500, help="Number of test samples (default: 500)")
+    args = parser.parse_args()
+    print(f"=== Climate-Pulse Evaluation (n={args.n_samples}) ===")
+    evaluate(n_samples=args.n_samples)
