@@ -123,3 +123,33 @@ class TestGetMetrics:
     def test_has_model_version(self):
         m = get_metrics()
         assert "model_version" in m
+
+
+class TestIsModelTrained:
+    def test_returns_bool(self):
+        from app.model import is_model_trained
+        result = is_model_trained()
+        assert isinstance(result, bool)
+
+    def test_true_after_training(self, trained_metrics):
+        from app.model import is_model_trained
+        # trained_metrics fixture already trained models
+        assert is_model_trained() is True
+
+
+class TestResetModelCache:
+    def test_reset_does_not_raise(self):
+        from app.model import reset_model_cache
+        reset_model_cache()
+
+    def test_models_still_loadable_after_reset(self):
+        from app.model import predict, reset_model_cache
+        import pandas as pd
+        reset_model_cache()
+        df = pd.DataFrame([{
+            "temperature": 20.0, "precipitation": 2.0, "humidity": 60.0,
+            "pressure": 1013.0, "wind_speed": 15.0, "cloud_cover": 30.0,
+            "month": 6.0, "day_of_year": 160.0,
+        }])
+        result = predict(df)
+        assert "predicted_temp" in result
