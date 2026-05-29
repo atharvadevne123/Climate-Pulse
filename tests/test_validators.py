@@ -206,3 +206,78 @@ class TestValidatePredictionOutput:
 
         predictions = {"extreme_event_prob": prob}
         assert validate_prediction_output(predictions) == []
+
+
+class TestValidateMonthValue:
+    def test_valid_month(self):
+        from app.validators import validate_month_value
+
+        assert validate_month_value(6.0) == []
+
+    def test_boundary_january(self):
+        from app.validators import validate_month_value
+
+        assert validate_month_value(1.0) == []
+
+    def test_boundary_december(self):
+        from app.validators import validate_month_value
+
+        assert validate_month_value(12.0) == []
+
+    def test_month_zero_invalid(self):
+        from app.validators import validate_month_value
+
+        errors = validate_month_value(0.0)
+        assert len(errors) > 0
+
+    def test_month_13_invalid(self):
+        from app.validators import validate_month_value
+
+        errors = validate_month_value(13.0)
+        assert len(errors) > 0
+
+    def test_negative_month_invalid(self):
+        from app.validators import validate_month_value
+
+        assert len(validate_month_value(-1.0)) > 0
+
+    @pytest.mark.parametrize("month", [1.0, 3.0, 6.0, 9.0, 12.0])
+    def test_valid_months_parametrized(self, month):
+        from app.validators import validate_month_value
+
+        assert validate_month_value(month) == []
+
+
+class TestValidatePressureValue:
+    def test_valid_pressure(self):
+        from app.validators import validate_pressure_value
+
+        assert validate_pressure_value(1013.25) == []
+
+    def test_boundary_low(self):
+        from app.validators import validate_pressure_value
+
+        assert validate_pressure_value(870.0) == []
+
+    def test_boundary_high(self):
+        from app.validators import validate_pressure_value
+
+        assert validate_pressure_value(1085.0) == []
+
+    def test_too_low_invalid(self):
+        from app.validators import validate_pressure_value
+
+        errors = validate_pressure_value(800.0)
+        assert len(errors) > 0
+
+    def test_too_high_invalid(self):
+        from app.validators import validate_pressure_value
+
+        errors = validate_pressure_value(1100.0)
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("pressure", [900.0, 950.0, 1013.25, 1060.0])
+    def test_valid_pressures_parametrized(self, pressure):
+        from app.validators import validate_pressure_value
+
+        assert validate_pressure_value(pressure) == []
