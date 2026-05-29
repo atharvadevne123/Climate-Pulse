@@ -129,6 +129,90 @@ def get_drift_history(db: Session, limit: int = 100) -> list[DriftReport]:
     return db.query(DriftReport).order_by(DriftReport.timestamp.desc()).limit(limit).all()
 
 
+def get_station_stats(db: Session, station_id: str) -> dict[str, Any]:
+    """Return aggregate prediction statistics for a single station.
+
+    Args:
+        db: Active SQLAlchemy session.
+        station_id: Station identifier to aggregate.
+
+    Returns:
+        Dict with count, avg/min/max for temp/precip/extreme_prob.
+    """
+    logs = db.query(PredictionLog).filter(PredictionLog.station_id == station_id).all()
+    if not logs:
+        return {"station_id": station_id, "count": 0}
+
+    temps = [l.predicted_temp for l in logs if l.predicted_temp is not None]
+    precips = [l.predicted_precip for l in logs if l.predicted_precip is not None]
+    extremes = [l.extreme_event_prob for l in logs if l.extreme_event_prob is not None]
+
+    def _stats(values: list[float]) -> dict[str, float]:
+        if not values:
+            return {"avg": 0.0, "min": 0.0, "max": 0.0}
+        return {
+            "avg": round(sum(values) / len(values), 4),
+            "min": round(min(values), 4),
+            "max": round(max(values), 4),
+        }
+
+    return {
+        "station_id": station_id,
+        "count": len(logs),
+        "temperature": _stats(temps),
+        "precipitation": _stats(precips),
+        "extreme_event_prob": _stats(extremes),
+    }
+
+
+def get_drift_count_by_feature(db: Session) -> dict[str, int]:
+    """Return number of drift events detected per feature name.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Dict mapping feature name to count of drift-detected reports.
+    """
+    reports = db.query(DriftReport).filter(DriftReport.drift_detected == 1).all()
+    counts: dict[str, int] = {}
+    for r in reports:
+        counts[r.feature_name] = counts.get(r.feature_name, 0) + 1
+    return counts
+
+
+def purge_old_predictions(db: Session, keep_latest: int = 10000) -> int:
+    """Delete prediction logs beyond the most recent *keep_latest* records.
+
+    Args:
+        db: Active SQLAlchemy session.
+        keep_latest: Number of most-recent records to retain (default 10 000).
+
+    Returns:
+        Number of rows deleted.
+    """
+    total = db.query(PredictionLog).count()
+    if total <= keep_latest:
+        return 0
+    cutoff_id_row = (
+        db.query(PredictionLog)
+        .order_by(PredictionLog.timestamp.desc())
+        .offset(keep_latest - 1)
+        .limit(1)
+        .first()
+    )
+    if cutoff_id_row is None:
+        return 0
+    deleted = (
+        db.query(PredictionLog)
+        .filter(PredictionLog.id < cutoff_id_row.id)
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    logger.info("monitoring.purge_old_predictions: deleted=%d", deleted)
+    return deleted
+
+
 def compute_feature_drift_from_db(
     db: Session,
     feature_name: str,
