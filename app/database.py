@@ -159,3 +159,22 @@ def get_prediction_count_by_station(db, station_id: str) -> int:
         Integer count.
     """
     return db.query(PredictionLog).filter(PredictionLog.station_id == station_id).count()
+
+
+def get_predictions_between(db, start: datetime, end: datetime) -> list[PredictionLog]:
+    """Return prediction logs with timestamps in the half-open interval [start, end).
+
+    Args:
+        db: Active SQLAlchemy session.
+        start: Inclusive lower bound (UTC datetime).
+        end: Exclusive upper bound (UTC datetime).
+
+    Returns:
+        List of matching PredictionLog instances ordered by timestamp ascending.
+    """
+    return (
+        db.query(PredictionLog)
+        .filter(PredictionLog.timestamp >= start, PredictionLog.timestamp < end)
+        .order_by(PredictionLog.timestamp.asc())
+        .all()
+    )
