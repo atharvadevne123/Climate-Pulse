@@ -208,3 +208,51 @@ class TestTransformFeatures:
 
         result = _transform_features(self._make_df())
         assert np.isfinite(result).all()
+
+
+class TestPredictEdgeCases:
+    def _payload(self, **overrides):
+        base = {
+            "temperature": 20.0, "precipitation": 2.0, "humidity": 60.0,
+            "pressure": 1013.0, "wind_speed": 15.0, "cloud_cover": 30.0,
+            "month": 6.0, "day_of_year": 160.0,
+        }
+        base.update(overrides)
+        return pd.DataFrame([base])
+
+    @pytest.mark.parametrize("temperature", [-89.0, 0.0, 35.0, 59.0])
+    def test_predict_valid_temperature_range(self, temperature):
+        result = predict(self._payload(temperature=temperature))
+        assert "predicted_temp" in result
+
+    def test_predict_extreme_temperature_hot(self):
+        result = predict(self._payload(temperature=55.0, humidity=90.0))
+        assert "extreme_event_prob" in result
+        assert 0.0 <= result["extreme_event_prob"] <= 1.0
+
+    def test_predict_extreme_temperature_cold(self):
+        result = predict(self._payload(temperature=-30.0))
+        assert "extreme_event_prob" in result
+
+    def test_predict_zero_wind(self):
+        result = predict(self._payload(wind_speed=0.0))
+        assert "predicted_temp" in result
+
+    def test_predict_full_cloud_cover(self):
+        result = predict(self._payload(cloud_cover=100.0))
+        assert "predicted_temp" in result
+
+    @pytest.mark.parametrize("month", [1.0, 6.0, 12.0])
+    def test_predict_seasonal_months(self, month):
+        result = predict(self._payload(month=month))
+        assert "predicted_temp" in result
+
+    def test_predict_model_version_string(self):
+        result = predict(self._payload())
+        assert isinstance(result["model_version"], str)
+        assert len(result["model_version"]) > 0
+
+    def test_predict_precip_non_negative(self):
+        for _ in range(5):
+            result = predict(self._payload())
+            assert result["predicted_precip"] >= 0.0
