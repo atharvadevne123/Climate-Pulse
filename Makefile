@@ -1,4 +1,4 @@
-.PHONY: install test test-cov lint lint-fix format type-check security run diagram clean docker-build benchmark retrain db-migrate
+.PHONY: install test test-cov lint lint-fix format type-check security run diagram clean docker-build benchmark retrain db-migrate profile audit
 
 install:
 	pip install -r requirements.txt
@@ -49,6 +49,12 @@ retrain:
 
 db-migrate:
 	alembic upgrade head
+
+profile:
+	python -m cProfile -s cumulative scripts/evaluate.py 2>&1 | head -30
+
+audit:
+	pip-audit --desc
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
