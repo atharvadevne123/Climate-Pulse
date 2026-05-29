@@ -51,3 +51,32 @@ class TestSettings:
     def test_debug_is_bool(self):
         s = Settings()
         assert isinstance(s.debug, bool)
+
+
+class TestSettingsEdgeCases:
+    def test_settings_database_url_string(self):
+        from app.config import Settings
+        s = Settings()
+        assert isinstance(s.database_url, str)
+
+    def test_settings_model_dir_default(self):
+        import os
+        from app.config import Settings
+        os.environ.setdefault("MODEL_DIR", "./models")
+        s = Settings()
+        assert s.model_dir is not None
+
+    def test_get_settings_returns_same_instance(self):
+        from app.config import get_settings
+        # Cache means same instance returned
+        assert get_settings() is get_settings()
+
+    def test_settings_app_name_non_empty(self):
+        from app.config import Settings
+        s = Settings()
+        assert len(s.app_name) > 0
+
+    def test_settings_rate_limit_at_least_1(self):
+        from app.config import Settings
+        s = Settings()
+        assert s.rate_limit_per_minute >= 1
