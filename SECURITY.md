@@ -4,7 +4,9 @@
 
 | Version | Supported |
 |---------|-----------|
-| 1.0.x   | Yes       |
+| 1.2.x   | Yes       |
+| 1.1.x   | No        |
+| 1.0.x   | No        |
 
 ## Reporting a Vulnerability
 
@@ -15,7 +17,8 @@ Please email **devneatharva@gmail.com** with the subject "SECURITY: Climate-Puls
 - Impact assessment
 - Any suggested mitigation
 
-We aim to respond within 72 hours and will coordinate disclosure after a fix is available.
+We aim to respond within **72 hours** and coordinate disclosure after a fix is available.
+Expect a resolution timeline within **14 business days** for high-severity issues.
 
 ## Security Measures
 
