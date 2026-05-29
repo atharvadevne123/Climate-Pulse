@@ -274,6 +274,77 @@ class TestGetFeatureNames:
         assert required.issubset(set(get_feature_names()))
 
 
+class TestDewiPointTransformer:
+    def test_adds_dew_point_column(self, sample_df):
+        from app.features import DewiPointTransformer
+
+        t = DewiPointTransformer()
+        out = t.fit_transform(sample_df)
+        assert "dew_point" in out.columns
+
+    def test_dew_point_below_temperature(self, sample_df):
+        from app.features import DewiPointTransformer
+
+        t = DewiPointTransformer()
+        out = t.fit_transform(sample_df)
+        assert (out["dew_point"] <= out["temperature"]).all()
+
+    def test_dew_point_finite(self, sample_df):
+        from app.features import DewiPointTransformer
+
+        t = DewiPointTransformer()
+        out = t.fit_transform(sample_df)
+        assert np.isfinite(out["dew_point"]).all()
+
+    def test_no_input_columns_no_dew_point(self):
+        from app.features import DewiPointTransformer
+
+        df = pd.DataFrame({"pressure": [1013.0]})
+        t = DewiPointTransformer()
+        out = t.fit_transform(df)
+        assert "dew_point" not in out.columns
+
+    @pytest.mark.parametrize("temp,humidity", [(20.0, 60.0), (30.0, 80.0), (0.0, 50.0)])
+    def test_dew_point_specific_inputs(self, temp, humidity):
+        from app.features import DewiPointTransformer
+
+        df = pd.DataFrame({"temperature": [temp], "humidity": [humidity]})
+        t = DewiPointTransformer()
+        out = t.fit_transform(df)
+        assert "dew_point" in out.columns
+        assert np.isfinite(out["dew_point"].iloc[0])
+
+
+class TestGetPipelineStageNames:
+    def test_returns_list(self):
+        from app.features import get_pipeline_stage_names
+
+        result = get_pipeline_stage_names()
+        assert isinstance(result, list)
+
+    def test_excludes_scaler(self):
+        from app.features import get_pipeline_stage_names
+
+        result = get_pipeline_stage_names()
+        assert "scaler" not in result
+
+    def test_includes_heat_index(self):
+        from app.features import get_pipeline_stage_names
+
+        assert "heat_index" in get_pipeline_stage_names()
+
+    def test_includes_lag_features(self):
+        from app.features import get_pipeline_stage_names
+
+        assert "lag_features" in get_pipeline_stage_names()
+
+    @pytest.mark.parametrize("stage", ["lag_features", "rolling_stats", "atmospheric_ratios", "seasonal_encoding", "dew_point", "heat_index"])
+    def test_all_expected_stages_present(self, stage):
+        from app.features import get_pipeline_stage_names
+
+        assert stage in get_pipeline_stage_names()
+
+
 class TestPipelineWithHeatIndex:
     def test_pipeline_includes_heat_index_stage(self):
         from app.features import build_feature_pipeline
