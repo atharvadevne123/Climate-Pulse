@@ -143,3 +143,55 @@ class TestHealthEndpointRobustness:
     def test_metrics_sample_count_positive(self, client):
         data = client.get("/api/v1/metrics").json()
         assert data["n_training_samples"] > 0
+
+
+class TestModelInfoParametrized:
+    def test_model_info_pipeline_has_heat_index(self, client):
+        data = client.get("/api/v1/model/info").json()
+        assert "heat_index" in data.get("pipeline_stages", [])
+
+    def test_model_info_n_input_features(self, client):
+        data = client.get("/api/v1/model/info").json()
+        assert data.get("n_input_features", 0) == 8
+
+    @pytest.mark.parametrize("stage", ["lag_features", "rolling_stats", "atmospheric_ratios", "seasonal_encoding", "dew_point", "heat_index"])
+    def test_model_info_all_pipeline_stages(self, client, stage):
+        data = client.get("/api/v1/model/info").json()
+        assert stage in data.get("pipeline_stages", [])
+
+
+class TestStationHistoryParametrized:
+    @pytest.mark.parametrize("station_id", ["BERLIN_001", "JFK_INTL", "AWS-042"])
+    def test_history_for_known_station_ids(self, client, sample_weather_payload, station_id):
+        payload = {**sample_weather_payload, "station_id": station_id}
+        client.post("/api/v1/predict", json=payload)
+        resp = client.get(f"/api/v1/stations/{station_id}/history")
+        assert resp.status_code == 200
+        records = resp.json()
+        assert isinstance(records, list)
+        if records:
+            assert records[0]["station_id"] == station_id
+
+    def test_history_record_has_timestamp(self, client, sample_weather_payload):
+        client.post("/api/v1/predict", json={**sample_weather_payload, "station_id": "TS_STATION"})
+        records = client.get("/api/v1/stations/TS_STATION/history?limit=1").json()
+        if records:
+            assert "timestamp" in records[0]
+
+
+class TestRetrain:
+    def test_retrain_updates_cache(self, client):
+        # First call primes cache
+        client.get("/api/v1/metrics")
+        # Retrain invalidates cache
+        resp = client.post("/api/v1/retrain")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "retrained"
+        # Metrics should still load after cache invalidation
+        metrics_resp = client.get("/api/v1/metrics")
+        assert metrics_resp.status_code == 200
+
+    @pytest.mark.parametrize("endpoint", ["/api/v1/health", "/api/v1/readyz", "/api/v1/version"])
+    def test_system_endpoints_always_200(self, client, endpoint):
+        resp = client.get(endpoint)
+        assert resp.status_code == 200
