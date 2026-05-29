@@ -1,4 +1,5 @@
 """Feature engineering pipeline tests."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -122,10 +123,14 @@ class TestBuildFeaturePipeline:
 class TestPrepareFeatures:
     def test_returns_dataframe(self):
         payload = {
-            "temperature": 20.0, "precipitation": 2.0,
-            "humidity": 60.0, "pressure": 1013.0,
-            "wind_speed": 15.0, "cloud_cover": 30.0,
-            "month": 6.0, "day_of_year": 160.0,
+            "temperature": 20.0,
+            "precipitation": 2.0,
+            "humidity": 60.0,
+            "pressure": 1013.0,
+            "wind_speed": 15.0,
+            "cloud_cover": 30.0,
+            "month": 6.0,
+            "day_of_year": 160.0,
         }
         df = prepare_features(payload)
         assert isinstance(df, pd.DataFrame)
@@ -135,10 +140,19 @@ class TestPrepareFeatures:
         df = prepare_features({"temperature": 20.0})
         assert df["precipitation"].iloc[0] == 0.0
 
-    @pytest.mark.parametrize("feature", [
-        "temperature", "precipitation", "humidity", "pressure",
-        "wind_speed", "cloud_cover", "month", "day_of_year",
-    ])
+    @pytest.mark.parametrize(
+        "feature",
+        [
+            "temperature",
+            "precipitation",
+            "humidity",
+            "pressure",
+            "wind_speed",
+            "cloud_cover",
+            "month",
+            "day_of_year",
+        ],
+    )
     def test_all_feature_columns_present(self, feature):
         df = prepare_features({})
         assert feature in df.columns

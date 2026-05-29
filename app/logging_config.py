@@ -3,6 +3,7 @@
 Provides key=value structured log lines for easy parsing by log aggregators
 such as Datadog, Loki, or CloudWatch Logs Insights.
 """
+
 from __future__ import annotations
 
 import logging

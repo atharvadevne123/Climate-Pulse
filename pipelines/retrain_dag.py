@@ -1,4 +1,5 @@
 """Airflow DAG for automated weekly model retraining with validation gate."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -6,6 +7,7 @@ from datetime import datetime, timedelta
 try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
+
     _AIRFLOW_AVAILABLE = True
 except ImportError:
     _AIRFLOW_AVAILABLE = False
@@ -31,8 +33,10 @@ def _load_data() -> dict:
     """Load latest weather observations for retraining."""
     import os
     import sys
+
     sys.path.insert(0, os.getcwd())
     from app.model import _generate_synthetic_training_data  # noqa: PLC0415
+
     X, y_temp, y_precip, y_extreme = _generate_synthetic_training_data(n=3000)
     return {
         "X": X.to_json(),
@@ -48,6 +52,7 @@ def _train(**context) -> None:
     import sys
 
     import pandas as pd
+
     sys.path.insert(0, os.getcwd())
     from app.model import train_models  # noqa: PLC0415
 
@@ -69,13 +74,9 @@ def _validate(**context) -> None:
     metrics = ti.xcom_pull(task_ids="train_models", key="metrics")
 
     if metrics["temp_r2_mean"] < RETRAINING_THRESHOLD_R2:
-        raise ValueError(
-            f"Temp R² {metrics['temp_r2_mean']:.4f} below threshold {RETRAINING_THRESHOLD_R2}"
-        )
+        raise ValueError(f"Temp R² {metrics['temp_r2_mean']:.4f} below threshold {RETRAINING_THRESHOLD_R2}")
     if metrics["extreme_auc_mean"] < EXTREME_AUC_THRESHOLD:
-        raise ValueError(
-            f"Extreme AUC {metrics['extreme_auc_mean']:.4f} below threshold {EXTREME_AUC_THRESHOLD}"
-        )
+        raise ValueError(f"Extreme AUC {metrics['extreme_auc_mean']:.4f} below threshold {EXTREME_AUC_THRESHOLD}")
     logger.info("retrain_dag._validate: all gates passed metrics=%s", metrics)
 
 

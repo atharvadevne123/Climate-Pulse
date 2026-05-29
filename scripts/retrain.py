@@ -1,4 +1,5 @@
 """Standalone model retraining script for CLI use."""
+
 from __future__ import annotations
 
 import json

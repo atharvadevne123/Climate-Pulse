@@ -1,4 +1,5 @@
 """Tests for SQLAlchemy database models and session management."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -69,16 +70,18 @@ class TestPredictionLogModel:
 
     def test_query_prediction_logs(self, db):
         for i in range(3):
-            db.add(PredictionLog(
-                correlation_id=f"c{i}",
-                timestamp=datetime.now(UTC),
-                station_id="S1",
-                features={},
-                predicted_temp=float(i),
-                predicted_precip=0.0,
-                extreme_event_prob=0.0,
-                model_version="1.0.0",
-            ))
+            db.add(
+                PredictionLog(
+                    correlation_id=f"c{i}",
+                    timestamp=datetime.now(UTC),
+                    station_id="S1",
+                    features={},
+                    predicted_temp=float(i),
+                    predicted_precip=0.0,
+                    extreme_event_prob=0.0,
+                    model_version="1.0.0",
+                )
+            )
         db.commit()
         logs = db.query(PredictionLog).filter_by(station_id="S1").all()
         assert len(logs) == 3
@@ -137,16 +140,18 @@ class TestDatabaseHelpers:
         assert count_predictions(db) == 0
 
     def test_count_predictions_after_insert(self, db):
-        db.add(PredictionLog(
-            correlation_id="helper-001",
-            timestamp=datetime.now(UTC),
-            station_id="H1",
-            features={},
-            predicted_temp=10.0,
-            predicted_precip=0.0,
-            extreme_event_prob=0.0,
-            model_version="1.0.0",
-        ))
+        db.add(
+            PredictionLog(
+                correlation_id="helper-001",
+                timestamp=datetime.now(UTC),
+                station_id="H1",
+                features={},
+                predicted_temp=10.0,
+                predicted_precip=0.0,
+                extreme_event_prob=0.0,
+                model_version="1.0.0",
+            )
+        )
         db.commit()
         assert count_predictions(db) == 1
 
@@ -154,13 +159,15 @@ class TestDatabaseHelpers:
         assert count_drift_reports(db) == 0
 
     def test_count_drift_reports_after_insert(self, db):
-        db.add(DriftReport(
-            timestamp=datetime.now(UTC),
-            feature_name="temperature",
-            ks_statistic=0.1,
-            p_value=0.5,
-            drift_detected=0,
-        ))
+        db.add(
+            DriftReport(
+                timestamp=datetime.now(UTC),
+                feature_name="temperature",
+                ks_statistic=0.1,
+                p_value=0.5,
+                drift_detected=0,
+            )
+        )
         db.commit()
         assert count_drift_reports(db) == 1
 
@@ -170,16 +177,18 @@ class TestDatabaseHelpers:
 
     def test_get_predictions_by_station_returns_correct_records(self, db):
         for i in range(3):
-            db.add(PredictionLog(
-                correlation_id=f"station-{i}",
-                timestamp=datetime.now(UTC),
-                station_id="QUERY_STATION",
-                features={},
-                predicted_temp=float(i),
-                predicted_precip=0.0,
-                extreme_event_prob=0.0,
-                model_version="1.0.0",
-            ))
+            db.add(
+                PredictionLog(
+                    correlation_id=f"station-{i}",
+                    timestamp=datetime.now(UTC),
+                    station_id="QUERY_STATION",
+                    features={},
+                    predicted_temp=float(i),
+                    predicted_precip=0.0,
+                    extreme_event_prob=0.0,
+                    model_version="1.0.0",
+                )
+            )
         db.commit()
         result = get_predictions_by_station(db, "QUERY_STATION")
         assert len(result) == 3
@@ -187,16 +196,18 @@ class TestDatabaseHelpers:
 
     def test_get_predictions_by_station_limit(self, db):
         for i in range(5):
-            db.add(PredictionLog(
-                correlation_id=f"limit-{i}",
-                timestamp=datetime.now(UTC),
-                station_id="LIMIT_STATION",
-                features={},
-                predicted_temp=float(i),
-                predicted_precip=0.0,
-                extreme_event_prob=0.0,
-                model_version="1.0.0",
-            ))
+            db.add(
+                PredictionLog(
+                    correlation_id=f"limit-{i}",
+                    timestamp=datetime.now(UTC),
+                    station_id="LIMIT_STATION",
+                    features={},
+                    predicted_temp=float(i),
+                    predicted_precip=0.0,
+                    extreme_event_prob=0.0,
+                    model_version="1.0.0",
+                )
+            )
         db.commit()
         result = get_predictions_by_station(db, "LIMIT_STATION", limit=2)
         assert len(result) == 2

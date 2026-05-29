@@ -1,4 +1,5 @@
 """Tests for new API endpoints: /readyz, /version, /drift/history."""
+
 from __future__ import annotations
 
 import pytest

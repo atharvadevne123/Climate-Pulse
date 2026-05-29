@@ -1,4 +1,5 @@
 """General-purpose utility functions for Climate-Pulse."""
+
 from __future__ import annotations
 
 import logging

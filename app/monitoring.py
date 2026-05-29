@@ -1,4 +1,5 @@
 """Drift detection, prediction logging, and model monitoring."""
+
 from __future__ import annotations
 
 import logging
@@ -112,11 +113,7 @@ def get_prediction_by_correlation_id(db: Session, correlation_id: str) -> Predic
     Returns:
         Matching PredictionLog instance, or None.
     """
-    return (
-        db.query(PredictionLog)
-        .filter(PredictionLog.correlation_id == correlation_id)
-        .first()
-    )
+    return db.query(PredictionLog).filter(PredictionLog.correlation_id == correlation_id).first()
 
 
 def get_drift_history(db: Session, limit: int = 100) -> list[DriftReport]:
@@ -140,16 +137,9 @@ def compute_feature_drift_from_db(
 ) -> dict[str, Any]:
     """Pull recent predictions from DB, extract feature values, run KS test."""
     logs = (
-        db.query(PredictionLog)
-        .order_by(PredictionLog.timestamp.desc())
-        .limit(reference_window + current_window)
-        .all()
+        db.query(PredictionLog).order_by(PredictionLog.timestamp.desc()).limit(reference_window + current_window).all()
     )
-    values = [
-        float(log.features.get(feature_name, 0))
-        for log in logs
-        if log.features and feature_name in log.features
-    ]
+    values = [float(log.features.get(feature_name, 0)) for log in logs if log.features and feature_name in log.features]
     if len(values) < reference_window + current_window:
         return {"ks_statistic": 0.0, "p_value": 1.0, "drift_detected": False, "reason": "insufficient_data"}
     reference = values[current_window:]

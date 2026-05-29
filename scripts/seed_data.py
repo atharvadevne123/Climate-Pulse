@@ -1,4 +1,5 @@
 """Seed the database with synthetic weather observations for development."""
+
 from __future__ import annotations
 
 import logging

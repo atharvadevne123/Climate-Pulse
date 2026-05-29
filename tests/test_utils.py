@@ -1,4 +1,5 @@
 """Tests for app/utils.py utility functions."""
+
 from __future__ import annotations
 
 import pytest
@@ -22,11 +23,14 @@ class TestClamp:
     def test_value_at_hi_boundary(self):
         assert clamp(10.0, 0.0, 10.0) == 10.0
 
-    @pytest.mark.parametrize("value,lo,hi,expected", [
-        (-100.0, -90.0, 60.0, -90.0),
-        (70.0, -90.0, 60.0, 60.0),
-        (20.0, -90.0, 60.0, 20.0),
-    ])
+    @pytest.mark.parametrize(
+        "value,lo,hi,expected",
+        [
+            (-100.0, -90.0, 60.0, -90.0),
+            (70.0, -90.0, 60.0, 60.0),
+            (20.0, -90.0, 60.0, 20.0),
+        ],
+    )
     def test_temperature_range_clamping(self, value, lo, hi, expected):
         assert clamp(value, lo, hi) == expected
 

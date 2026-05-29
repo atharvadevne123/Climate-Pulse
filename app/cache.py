@@ -3,6 +3,7 @@
 Thread-unsafe by design — this service is single-process (one uvicorn worker).
 For multi-process deployments, replace with Redis or Memcached.
 """
+
 from __future__ import annotations
 
 import logging

@@ -1,4 +1,5 @@
 """Feature engineering pipeline for climate/weather prediction."""
+
 from __future__ import annotations
 
 import logging
@@ -63,16 +64,10 @@ class RollingStatsTransformer(BaseEstimator, TransformerMixin):
         X = X.copy()
         for w in self.windows:
             if "temperature" in X.columns:
-                X[f"temp_roll_mean_{w}"] = (
-                    X["temperature"].rolling(w, min_periods=1).mean()
-                )
-                X[f"temp_roll_std_{w}"] = (
-                    X["temperature"].rolling(w, min_periods=1).std().fillna(0)
-                )
+                X[f"temp_roll_mean_{w}"] = X["temperature"].rolling(w, min_periods=1).mean()
+                X[f"temp_roll_std_{w}"] = X["temperature"].rolling(w, min_periods=1).std().fillna(0)
             if "precipitation" in X.columns:
-                X[f"precip_roll_sum_{w}"] = (
-                    X["precipitation"].rolling(w, min_periods=1).sum()
-                )
+                X[f"precip_roll_sum_{w}"] = X["precipitation"].rolling(w, min_periods=1).sum()
         return X
 
 
@@ -134,9 +129,7 @@ class DewiPointTransformer(BaseEstimator, TransformerMixin):
         if "temperature" in X.columns and "humidity" in X.columns:
             # Magnus formula approximation
             a, b = 17.27, 237.7
-            alpha = (a * X["temperature"]) / (b + X["temperature"]) + np.log(
-                X["humidity"].clip(1, 100) / 100
-            )
+            alpha = (a * X["temperature"]) / (b + X["temperature"]) + np.log(X["humidity"].clip(1, 100) / 100)
             X["dew_point"] = (b * alpha) / (a - alpha)
         return X
 

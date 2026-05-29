@@ -1,4 +1,5 @@
 """Tests for custom exception handlers."""
+
 from __future__ import annotations
 
 import json
@@ -85,6 +86,7 @@ class TestKeyErrorHandler:
     def test_key_error_handler_registered(self):
         app = FastAPI()
         register_exception_handlers(app)
+
         # If KeyError handler registered, raising KeyError in a route triggers a 400
         @app.get("/raise-key-error")
         async def raise_key_error():

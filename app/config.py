@@ -1,4 +1,5 @@
 """Application settings via environment variables."""
+
 from __future__ import annotations
 
 import os

@@ -1,4 +1,5 @@
 """Simple load test for the Climate-Pulse prediction endpoint."""
+
 from __future__ import annotations
 
 import concurrent.futures
@@ -9,17 +10,19 @@ import urllib.request
 
 BASE_URL = "http://localhost:8000"
 
-PAYLOAD = json.dumps({
-    "station_id": "LOADTEST_001",
-    "temperature": 22.5,
-    "precipitation": 3.2,
-    "humidity": 65.0,
-    "pressure": 1012.5,
-    "wind_speed": 18.0,
-    "cloud_cover": 40.0,
-    "month": 6.0,
-    "day_of_year": 160.0,
-}).encode()
+PAYLOAD = json.dumps(
+    {
+        "station_id": "LOADTEST_001",
+        "temperature": 22.5,
+        "precipitation": 3.2,
+        "humidity": 65.0,
+        "pressure": 1012.5,
+        "wind_speed": 18.0,
+        "cloud_cover": 40.0,
+        "month": 6.0,
+        "day_of_year": 160.0,
+    }
+).encode()
 
 
 def single_request() -> tuple[int, float]:

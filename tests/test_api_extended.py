@@ -1,4 +1,5 @@
 """Extended API endpoint tests for Climate-Pulse — edge cases and parametrized scenarios."""
+
 from __future__ import annotations
 
 import pytest

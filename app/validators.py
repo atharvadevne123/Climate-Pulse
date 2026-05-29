@@ -1,4 +1,5 @@
 """Input validation utilities for Climate-Pulse."""
+
 from __future__ import annotations
 
 import logging
@@ -6,10 +7,18 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-VALID_FEATURES: frozenset[str] = frozenset([
-    "temperature", "precipitation", "humidity", "pressure",
-    "wind_speed", "cloud_cover", "month", "day_of_year",
-])
+VALID_FEATURES: frozenset[str] = frozenset(
+    [
+        "temperature",
+        "precipitation",
+        "humidity",
+        "pressure",
+        "wind_speed",
+        "cloud_cover",
+        "month",
+        "day_of_year",
+    ]
+)
 
 FEATURE_RANGES: dict[str, tuple[float, float]] = {
     "temperature": (-90.0, 60.0),
@@ -81,8 +90,6 @@ def validate_cross_field(data: dict[str, Any]) -> list[str]:
         if isinstance(temp, int | float) and isinstance(humidity, int | float):
             # Very low humidity with very high temperature is physically possible but flagged
             if temp > 45 and humidity < 5:
-                errors.append(
-                    f"temperature={temp} with humidity={humidity} is an unusual combination; verify sensor"
-                )
+                errors.append(f"temperature={temp} with humidity={humidity} is an unusual combination; verify sensor")
     logger.debug("validators.validate_cross_field: errors=%s", errors)
     return errors

@@ -1,4 +1,5 @@
 """ML model training, persistence, and prediction for Climate-Pulse."""
+
 from __future__ import annotations
 
 import json
@@ -125,27 +126,33 @@ class _EnsembleClassifier:
 
 
 def _build_temp_ensemble() -> _EnsembleRegressor:
-    return _EnsembleRegressor([
-        LGBMRegressor(n_estimators=100, max_depth=5, learning_rate=0.05, verbose=-1),
-        XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.05, verbosity=0),
-        RandomForestRegressor(n_estimators=100, max_depth=6, random_state=42),
-    ])
+    return _EnsembleRegressor(
+        [
+            LGBMRegressor(n_estimators=100, max_depth=5, learning_rate=0.05, verbose=-1),
+            XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.05, verbosity=0),
+            RandomForestRegressor(n_estimators=100, max_depth=6, random_state=42),
+        ]
+    )
 
 
 def _build_precip_ensemble() -> _EnsembleRegressor:
-    return _EnsembleRegressor([
-        LGBMRegressor(n_estimators=80, max_depth=4, learning_rate=0.08, verbose=-1),
-        XGBRegressor(n_estimators=80, max_depth=4, learning_rate=0.08, verbosity=0),
-        RandomForestRegressor(n_estimators=80, max_depth=5, random_state=42),
-    ])
+    return _EnsembleRegressor(
+        [
+            LGBMRegressor(n_estimators=80, max_depth=4, learning_rate=0.08, verbose=-1),
+            XGBRegressor(n_estimators=80, max_depth=4, learning_rate=0.08, verbosity=0),
+            RandomForestRegressor(n_estimators=80, max_depth=5, random_state=42),
+        ]
+    )
 
 
 def _build_extreme_ensemble() -> _EnsembleClassifier:
-    return _EnsembleClassifier([
-        LGBMClassifier(n_estimators=100, max_depth=5, learning_rate=0.05, verbose=-1),
-        XGBClassifier(n_estimators=100, max_depth=5, learning_rate=0.05, verbosity=0, eval_metric="logloss"),
-        RandomForestClassifier(n_estimators=100, max_depth=6, random_state=42),
-    ])
+    return _EnsembleClassifier(
+        [
+            LGBMClassifier(n_estimators=100, max_depth=5, learning_rate=0.05, verbose=-1),
+            XGBClassifier(n_estimators=100, max_depth=5, learning_rate=0.05, verbosity=0, eval_metric="logloss"),
+            RandomForestClassifier(n_estimators=100, max_depth=6, random_state=42),
+        ]
+    )
 
 
 def _generate_synthetic_training_data(n: int = 2000) -> tuple[pd.DataFrame, pd.Series, pd.Series, pd.Series]:
@@ -174,7 +181,12 @@ def _generate_synthetic_training_data(n: int = 2000) -> tuple[pd.DataFrame, pd.S
             "day_of_year": days.astype(float),
         }
     )
-    return df, pd.Series(temp_next, name="temp_next"), pd.Series(precip_next, name="precip_next"), pd.Series(extreme, name="extreme")
+    return (
+        df,
+        pd.Series(temp_next, name="temp_next"),
+        pd.Series(precip_next, name="precip_next"),
+        pd.Series(extreme, name="extreme"),
+    )
 
 
 def train_models(
@@ -271,7 +283,9 @@ def predict(features: pd.DataFrame) -> dict[str, float]:
 
     logger.debug(
         "model.predict: temp=%.2f precip=%.2f extreme_prob=%.4f",
-        predicted_temp, predicted_precip, extreme_proba,
+        predicted_temp,
+        predicted_precip,
+        extreme_proba,
     )
     return {
         "predicted_temp": round(predicted_temp, 2),

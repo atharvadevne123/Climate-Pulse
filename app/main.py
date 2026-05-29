@@ -1,4 +1,5 @@
 """FastAPI application for Climate-Pulse: weather prediction API."""
+
 from __future__ import annotations
 
 import logging
@@ -159,6 +160,7 @@ async def readyz() -> dict[str, str]:
 async def version() -> dict[str, str]:
     """Return the current API and model version strings."""
     from app.model import MODEL_VERSION
+
     return {"api_version": "1.0.0", "model_version": MODEL_VERSION}
 
 
@@ -266,6 +268,7 @@ async def station_history(
     if limit > 200:
         raise HTTPException(status_code=400, detail="limit must be ≤ 200")
     from app.database import PredictionLog
+
     logs = (
         db.query(PredictionLog)
         .filter(PredictionLog.station_id == station_id)
@@ -323,6 +326,7 @@ async def model_freshness() -> dict[str, Any]:
     import time
 
     from app.model import EXTREME_MODEL_PATH, PRECIP_MODEL_PATH, TEMP_MODEL_PATH
+
     now = time.time()
 
     def _age_hours(path) -> float | None:
@@ -393,4 +397,5 @@ async def recent_predictions(
 async def telemetry_stats() -> dict[str, Any]:
     """Return live telemetry: request counters and latency histogram percentiles."""
     from app.telemetry import get_stats
+
     return get_stats()

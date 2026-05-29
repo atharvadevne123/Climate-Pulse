@@ -1,4 +1,5 @@
 """Generate the Climate-Pulse system architecture diagram."""
+
 from __future__ import annotations
 
 import os

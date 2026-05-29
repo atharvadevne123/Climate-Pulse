@@ -1,4 +1,5 @@
 """Custom exception handlers for Climate-Pulse FastAPI app."""
+
 from __future__ import annotations
 
 import logging

@@ -1,4 +1,5 @@
 """Extended model tests — synthetic data generation, ensemble, and predict edge cases."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -28,7 +29,16 @@ class TestSyntheticDataEdgeCases:
 
     def test_feature_columns_complete(self):
         X, _, _, _ = _generate_synthetic_training_data(n=100)
-        expected = {"temperature", "precipitation", "humidity", "pressure", "wind_speed", "cloud_cover", "month", "day_of_year"}
+        expected = {
+            "temperature",
+            "precipitation",
+            "humidity",
+            "pressure",
+            "wind_speed",
+            "cloud_cover",
+            "month",
+            "day_of_year",
+        }
         assert expected.issubset(set(X.columns))
 
     def test_month_in_valid_range(self):
@@ -53,6 +63,7 @@ class TestEnsembleRegressor:
     def test_fit_predict(self):
         import numpy as np
         from sklearn.linear_model import LinearRegression
+
         estimators = [LinearRegression(), LinearRegression()]
         ens = _EnsembleRegressor(estimators)
         X = np.array([[1.0], [2.0], [3.0]])
@@ -64,6 +75,7 @@ class TestEnsembleRegressor:
     def test_predict_average(self):
         import numpy as np
         from sklearn.linear_model import LinearRegression
+
         est1 = LinearRegression().fit(np.array([[1.0], [2.0]]), np.array([2.0, 4.0]))
         est2 = LinearRegression().fit(np.array([[1.0], [2.0]]), np.array([2.0, 4.0]))
         ens = _EnsembleRegressor([est1, est2])
@@ -72,6 +84,7 @@ class TestEnsembleRegressor:
 
     def test_get_params(self):
         from sklearn.linear_model import LinearRegression
+
         ens = _EnsembleRegressor([LinearRegression()])
         params = ens.get_params()
         assert "estimators" in params
@@ -81,6 +94,7 @@ class TestEnsembleClassifier:
     def test_fit_predict_proba(self):
         import numpy as np
         from sklearn.linear_model import LogisticRegression
+
         estimators = [LogisticRegression(), LogisticRegression()]
         ens = _EnsembleClassifier(estimators)
         X = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [0.0, 0.0]])
@@ -93,6 +107,7 @@ class TestEnsembleClassifier:
     def test_predict_binary(self):
         import numpy as np
         from sklearn.linear_model import LogisticRegression
+
         estimators = [LogisticRegression()]
         ens = _EnsembleClassifier(estimators)
         X = np.array([[1.0, 0.0], [0.0, 1.0]])
@@ -105,9 +120,14 @@ class TestEnsembleClassifier:
 class TestPredictEdgeCases:
     def _make_input(self, **overrides) -> pd.DataFrame:
         base = {
-            "temperature": 20.0, "precipitation": 2.0, "humidity": 60.0,
-            "pressure": 1013.0, "wind_speed": 15.0, "cloud_cover": 30.0,
-            "month": 6.0, "day_of_year": 160.0,
+            "temperature": 20.0,
+            "precipitation": 2.0,
+            "humidity": 60.0,
+            "pressure": 1013.0,
+            "wind_speed": 15.0,
+            "cloud_cover": 30.0,
+            "month": 6.0,
+            "day_of_year": 160.0,
         }
         base.update(overrides)
         return pd.DataFrame([base])
@@ -131,8 +151,14 @@ class TestPredictEdgeCases:
 class TestGetMetricsEdgeCases:
     def test_all_required_keys_present(self):
         m = get_metrics()
-        required = {"temp_r2_mean", "precip_r2_mean", "extreme_auc_mean",
-                    "n_training_samples", "n_features", "model_version"}
+        required = {
+            "temp_r2_mean",
+            "precip_r2_mean",
+            "extreme_auc_mean",
+            "n_training_samples",
+            "n_features",
+            "model_version",
+        }
         assert required.issubset(m.keys())
 
     def test_n_training_samples_is_int(self):
@@ -146,14 +172,24 @@ class TestGetMetricsEdgeCases:
 
 class TestTransformFeatures:
     def _make_df(self) -> pd.DataFrame:
-        return pd.DataFrame([{
-            "temperature": 20.0, "precipitation": 2.0, "humidity": 60.0,
-            "pressure": 1013.0, "wind_speed": 15.0, "cloud_cover": 30.0,
-            "month": 6.0, "day_of_year": 160.0,
-        }])
+        return pd.DataFrame(
+            [
+                {
+                    "temperature": 20.0,
+                    "precipitation": 2.0,
+                    "humidity": 60.0,
+                    "pressure": 1013.0,
+                    "wind_speed": 15.0,
+                    "cloud_cover": 30.0,
+                    "month": 6.0,
+                    "day_of_year": 160.0,
+                }
+            ]
+        )
 
     def test_returns_array(self):
         import numpy as np
+
         result = _transform_features(self._make_df())
         assert isinstance(result, np.ndarray)
 
@@ -169,5 +205,6 @@ class TestTransformFeatures:
 
     def test_output_is_finite(self):
         import numpy as np
+
         result = _transform_features(self._make_df())
         assert np.isfinite(result).all()

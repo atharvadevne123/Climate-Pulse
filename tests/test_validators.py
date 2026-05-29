@@ -1,4 +1,5 @@
 """Tests for input validation utilities."""
+
 from __future__ import annotations
 
 import pytest
@@ -21,13 +22,16 @@ class TestValidateFeatureDict:
     def test_valid_payload_no_errors(self):
         assert validate_feature_dict(VALID_PAYLOAD) == []
 
-    @pytest.mark.parametrize("field,bad_value", [
-        ("temperature", 200.0),
-        ("humidity", -5.0),
-        ("pressure", 500.0),
-        ("month", 13.0),
-        ("day_of_year", 400.0),
-    ])
+    @pytest.mark.parametrize(
+        "field,bad_value",
+        [
+            ("temperature", 200.0),
+            ("humidity", -5.0),
+            ("pressure", 500.0),
+            ("month", 13.0),
+            ("day_of_year", 400.0),
+        ],
+    )
     def test_out_of_range_returns_error(self, field, bad_value):
         payload = {**VALID_PAYLOAD, field: bad_value}
         errors = validate_feature_dict(payload)
@@ -53,10 +57,12 @@ class TestIsValidStationId:
 
     def test_station_id_at_max_length_is_valid(self):
         from app.validators import STATION_ID_MAX_LEN
+
         assert is_valid_station_id("A" * STATION_ID_MAX_LEN) is True
 
     def test_station_id_exceeds_max_length_is_invalid(self):
         from app.validators import STATION_ID_MAX_LEN
+
         assert is_valid_station_id("A" * (STATION_ID_MAX_LEN + 1)) is False
 
     @pytest.mark.parametrize("valid_id", ["AWS-001", "station.42", "NYC_JFK_INTL", "S1"])
@@ -65,15 +71,18 @@ class TestIsValidStationId:
 
 
 class TestValidateFeatureDictEdgeCases:
-    @pytest.mark.parametrize("field,boundary_value", [
-        ("temperature", -90.0),
-        ("temperature", 60.0),
-        ("precipitation", 0.0),
-        ("humidity", 0.0),
-        ("humidity", 100.0),
-        ("month", 1.0),
-        ("month", 12.0),
-    ])
+    @pytest.mark.parametrize(
+        "field,boundary_value",
+        [
+            ("temperature", -90.0),
+            ("temperature", 60.0),
+            ("precipitation", 0.0),
+            ("humidity", 0.0),
+            ("humidity", 100.0),
+            ("month", 1.0),
+            ("month", 12.0),
+        ],
+    )
     def test_boundary_values_are_valid(self, field, boundary_value):
         payload = {**VALID_PAYLOAD, field: boundary_value}
         errors = validate_feature_dict(payload)
@@ -113,12 +122,15 @@ class TestValidateCrossField:
     def test_only_humidity_no_errors(self):
         assert validate_cross_field({"humidity": 2.0}) == []
 
-    @pytest.mark.parametrize("temp,humidity", [
-        (20.0, 60.0),
-        (35.0, 50.0),
-        (45.0, 10.0),
-        (44.9, 4.0),
-    ])
+    @pytest.mark.parametrize(
+        "temp,humidity",
+        [
+            (20.0, 60.0),
+            (35.0, 50.0),
+            (45.0, 10.0),
+            (44.9, 4.0),
+        ],
+    )
     def test_valid_combinations_no_errors(self, temp, humidity):
         data = {"temperature": temp, "humidity": humidity}
         assert validate_cross_field(data) == []
