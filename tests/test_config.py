@@ -61,6 +61,7 @@ class TestSettingsEdgeCases:
 
     def test_settings_model_dir_default(self):
         import os
+
         from app.config import Settings
         os.environ.setdefault("MODEL_DIR", "./models")
         s = Settings()

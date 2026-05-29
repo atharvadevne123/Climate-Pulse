@@ -74,6 +74,7 @@ class TestStructuredFormatterParametrized:
 
     def test_format_with_all_log_levels(self):
         import pytest
+
         from app.logging_config import StructuredFormatter
 
         @pytest.mark.parametrize("level", [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR])
