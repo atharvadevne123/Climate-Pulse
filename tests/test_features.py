@@ -203,3 +203,70 @@ class TestSeasonalEncodingEdgeCases:
         out = t.fit_transform(sample_df)
         assert "doy_sin" in out.columns
         assert "doy_cos" in out.columns
+
+
+class TestHeatIndexTransformer:
+    def test_adds_heat_index_column(self, sample_df):
+        from app.features import HeatIndexTransformer
+        t = HeatIndexTransformer()
+        out = t.fit_transform(sample_df)
+        assert "heat_index" in out.columns
+
+    def test_heat_index_is_finite(self, sample_df):
+        from app.features import HeatIndexTransformer
+        import numpy as np
+        t = HeatIndexTransformer()
+        out = t.fit_transform(sample_df)
+        assert np.isfinite(out["heat_index"]).all()
+
+    def test_heat_index_no_nan(self, sample_df):
+        from app.features import HeatIndexTransformer
+        t = HeatIndexTransformer()
+        out = t.fit_transform(sample_df)
+        assert not out["heat_index"].isna().any()
+
+    @pytest.mark.parametrize("temp,humidity", [(35.0, 80.0), (40.0, 90.0), (20.0, 50.0)])
+    def test_heat_index_specific_values(self, temp, humidity):
+        from app.features import HeatIndexTransformer
+        import pandas as pd
+        df = pd.DataFrame({"temperature": [temp], "humidity": [humidity]})
+        t = HeatIndexTransformer()
+        out = t.fit_transform(df)
+        assert "heat_index" in out.columns
+
+
+class TestGetFeatureNames:
+    def test_returns_list(self):
+        from app.features import get_feature_names
+        names = get_feature_names()
+        assert isinstance(names, list)
+
+    def test_returns_expected_features(self):
+        from app.features import FEATURE_COLUMNS, get_feature_names
+        assert get_feature_names() == list(FEATURE_COLUMNS)
+
+    def test_contains_temperature(self):
+        from app.features import get_feature_names
+        assert "temperature" in get_feature_names()
+
+    def test_contains_all_required_features(self):
+        from app.features import get_feature_names
+        required = {"temperature", "precipitation", "humidity", "pressure", "wind_speed", "cloud_cover", "month", "day_of_year"}
+        assert required.issubset(set(get_feature_names()))
+
+
+class TestPipelineWithHeatIndex:
+    def test_pipeline_includes_heat_index_stage(self):
+        from app.features import build_feature_pipeline
+        pipeline = build_feature_pipeline()
+        stage_names = [step[0] for step in pipeline.steps]
+        assert "heat_index" in stage_names
+
+    def test_pipeline_output_more_features_than_before(self, sample_df):
+        from app.features import build_feature_pipeline
+        import numpy as np
+        pipeline = build_feature_pipeline()
+        result = pipeline.fit_transform(sample_df)
+        # Should have more features than raw input (8 columns)
+        assert result.shape[1] > 8
+        assert np.isfinite(result).all()
