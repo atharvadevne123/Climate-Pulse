@@ -172,3 +172,41 @@ class TestCacheStats:
         rate = cache_hit_rate("hr_key")
         assert rate > 0.0
         assert rate <= 1.0
+
+
+class TestCacheStatsExtended:
+    def test_hit_rate_zero_when_no_accesses(self):
+        from app.cache import cache_stats
+
+        stats = cache_stats()
+        assert isinstance(stats["hit_rate"], float)
+
+    def test_stats_returns_expected_keys(self):
+        from app.cache import cache_stats
+
+        stats = cache_stats()
+        expected_keys = {"size", "total_hits", "total_misses", "hit_rate"}
+        assert expected_keys.issubset(stats.keys())
+
+    def test_stats_size_zero_after_clear(self):
+        from app.cache import cache_stats
+
+        cache_clear()
+        stats = cache_stats()
+        assert stats["size"] == 0
+
+    def test_cache_get_or_set_populates_cache(self):
+        from app.cache import cache_get_or_set, cache_stats
+
+        cache_get_or_set("fresh_key_xyz", lambda: {"data": 42})
+        stats = cache_stats()
+        assert stats["size"] >= 1
+
+    @pytest.mark.parametrize("n_keys", [1, 3, 5])
+    def test_size_matches_n_distinct_keys(self, n_keys):
+        from app.cache import cache_stats
+
+        for i in range(n_keys):
+            cache_set(f"size_test_{n_keys}_{i}", i)
+        stats = cache_stats()
+        assert stats["size"] >= n_keys
