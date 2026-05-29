@@ -286,3 +286,62 @@ class TestNewDatabaseHelpers:
             )
         db.commit()
         assert get_prediction_count_by_station(db, station) == count
+
+
+class TestGetPredictionsBetween:
+    def test_returns_empty_when_none_in_range(self, db):
+        from datetime import timedelta
+
+        from app.database import get_predictions_between
+
+        future = datetime.now(UTC) + timedelta(hours=1)
+        result = get_predictions_between(db, future, future + timedelta(hours=1))
+        assert result == []
+
+    def test_returns_records_in_window(self, db):
+        from datetime import timedelta
+
+        from app.database import get_predictions_between
+
+        now = datetime.now(UTC)
+        for i in range(3):
+            db.add(
+                PredictionLog(
+                    correlation_id=f"between-{i}",
+                    timestamp=now + timedelta(seconds=i),
+                    station_id="BTW_ST",
+                    features={},
+                    predicted_temp=float(i),
+                    predicted_precip=0.0,
+                    extreme_event_prob=0.0,
+                    model_version="1.0.0",
+                )
+            )
+        db.commit()
+        end = now + timedelta(seconds=10)
+        result = get_predictions_between(db, now - timedelta(seconds=1), end)
+        assert len(result) == 3
+
+    def test_excludes_records_outside_window(self, db):
+        from datetime import timedelta
+
+        from app.database import get_predictions_between
+
+        past = datetime.now(UTC) - timedelta(hours=2)
+        db.add(
+            PredictionLog(
+                correlation_id="outside-window",
+                timestamp=past,
+                station_id="OUT_ST",
+                features={},
+                predicted_temp=10.0,
+                predicted_precip=0.0,
+                extreme_event_prob=0.0,
+                model_version="1.0.0",
+            )
+        )
+        db.commit()
+        recent_start = datetime.now(UTC) - timedelta(minutes=30)
+        recent_end = datetime.now(UTC)
+        result = get_predictions_between(db, recent_start, recent_end)
+        assert all(r.correlation_id != "outside-window" for r in result)
