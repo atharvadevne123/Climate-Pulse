@@ -134,3 +134,64 @@ class TestValidateCrossField:
     def test_valid_combinations_no_errors(self, temp, humidity):
         data = {"temperature": temp, "humidity": humidity}
         assert validate_cross_field(data) == []
+
+
+class TestValidateStationIdFormat:
+    def test_simple_alphanumeric_valid(self):
+        from app.validators import validate_station_id_format
+        assert validate_station_id_format("STATION001") == []
+
+    def test_hyphen_underscore_dot_valid(self):
+        from app.validators import validate_station_id_format
+        assert validate_station_id_format("AWS-001.2_B") == []
+
+    def test_spaces_invalid(self):
+        from app.validators import validate_station_id_format
+        errors = validate_station_id_format("AWS 001")
+        assert len(errors) > 0
+
+    def test_special_chars_invalid(self):
+        from app.validators import validate_station_id_format
+        errors = validate_station_id_format("station@#!")
+        assert len(errors) > 0
+
+    @pytest.mark.parametrize("sid", ["S1", "BERLIN-TEGEL", "JFK.01", "X_99"])
+    def test_valid_formats_parametrized(self, sid):
+        from app.validators import validate_station_id_format
+        assert validate_station_id_format(sid) == []
+
+
+class TestValidatePredictionOutput:
+    def test_valid_output_no_errors(self):
+        from app.validators import validate_prediction_output
+        predictions = {"predicted_temp": 22.0, "predicted_precip": 3.0, "extreme_event_prob": 0.15}
+        assert validate_prediction_output(predictions) == []
+
+    def test_negative_precip_flagged(self):
+        from app.validators import validate_prediction_output
+        predictions = {"predicted_temp": 22.0, "predicted_precip": -1.0, "extreme_event_prob": 0.1}
+        errors = validate_prediction_output(predictions)
+        assert any("precip" in e for e in errors)
+
+    def test_prob_above_1_flagged(self):
+        from app.validators import validate_prediction_output
+        predictions = {"predicted_temp": 22.0, "predicted_precip": 0.0, "extreme_event_prob": 1.5}
+        errors = validate_prediction_output(predictions)
+        assert any("extreme_event_prob" in e for e in errors)
+
+    def test_temp_out_of_range_flagged(self):
+        from app.validators import validate_prediction_output
+        predictions = {"predicted_temp": 200.0, "predicted_precip": 0.0, "extreme_event_prob": 0.0}
+        errors = validate_prediction_output(predictions)
+        assert any("temp" in e for e in errors)
+
+    def test_missing_fields_no_errors(self):
+        from app.validators import validate_prediction_output
+        # Missing optional fields should not raise errors
+        assert validate_prediction_output({}) == []
+
+    @pytest.mark.parametrize("prob", [0.0, 0.5, 1.0])
+    def test_boundary_probabilities_valid(self, prob):
+        from app.validators import validate_prediction_output
+        predictions = {"extreme_event_prob": prob}
+        assert validate_prediction_output(predictions) == []
