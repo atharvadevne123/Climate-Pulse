@@ -1,5 +1,7 @@
 # Contributing to Climate-Pulse
 
+We welcome bug reports, feature requests, and pull requests. This document describes the development workflow, coding standards, and PR process.
+
 ## Development Setup
 
 ```bash
@@ -7,61 +9,109 @@ git clone https://github.com/atharvadevne123/Climate-Pulse
 cd Climate-Pulse
 pip install -r requirements.txt
 pip install pytest-cov mypy bandit ruff
-cp .env.example .env
-make test
+cp .env.example .env   # fill in DB credentials if using PostgreSQL
+make test              # run the full test suite
 ```
+
+### Using Docker (recommended for full-stack dev)
+
+```bash
+docker-compose up --build
+# API at http://localhost:8000, PostgreSQL at localhost:5432
+```
+
+---
 
 ## Code Standards
 
-- Python 3.11+, type annotations on all public functions
-- Google-style docstrings on all classes and public methods
-- `ruff check . && ruff format --check .` must pass before submitting a PR
-- All new features require tests with ≥ 75% coverage on the `app/` package
-- Use `from __future__ import annotations` in all source files
+| Rule | Detail |
+|------|--------|
+| Python | 3.11+ |
+| Annotations | Type annotations on **all** public functions and class attributes |
+| Docstrings | Google-style on all classes and public methods |
+| Linting | `ruff check .` must exit 0 |
+| Formatting | `ruff format --check .` must exit 0 |
+| Coverage | New code must keep `app/` coverage ≥ 75% |
+| Imports | `from __future__ import annotations` in all source files |
+
+---
 
 ## Running Tests
 
 ```bash
-# All tests
+# Full test suite
 make test
 
-# With coverage report
+# With coverage report (HTML + terminal)
 make test-cov
 
 # Single module
 pytest tests/test_api.py -v
+pytest tests/test_features.py -v
+
+# Only fast unit tests (exclude retrain)
+pytest tests/ -v -k "not retrain"
 ```
 
-## Type Checking
+---
+
+## Type Checking and Security
 
 ```bash
-make type-check   # mypy app/
+make type-check   # mypy app/ --ignore-missing-imports
+make security     # bandit -r app/ pipelines/ -ll
 ```
 
-## Security Scanning
+---
 
-```bash
-make security     # bandit -r app/ pipelines/
-```
+## Adding a New Feature
+
+1. **New endpoint**: Add route to `app/main.py` with Pydantic response model
+2. **Business logic**: Add to the appropriate module (`app/monitoring.py`, `app/model.py`, etc.)
+3. **Tests**: Write ≥ 3 tests — happy path, edge case (boundary values), error case
+4. **Docs**: Update `README.md` API Reference and `CHANGELOG.md`
+5. **Migration** (if DB schema changes): Create a new Alembic revision in `alembic/versions/`
+
+---
+
+## Adding a New Feature Transformer
+
+1. Subclass `BaseEstimator, TransformerMixin` in `app/features.py`
+2. Implement `fit()` (return self) and `transform()` (return modified DataFrame copy)
+3. Add as a new stage in `build_feature_pipeline()` — update its docstring
+4. Write tests in `tests/test_features.py` using the `sample_df` fixture
+5. Update the pipeline table in `README.md`
+
+---
 
 ## Pull Request Process
 
-1. Fork the repo and create a feature branch (`git checkout -b feat/my-feature`)
-2. Write tests for all new functionality
-3. Run `make lint && make test-cov` — both must pass with coverage ≥ 75%
-4. Submit a PR with a clear description referencing any related issues
+1. Fork the repo and create a branch: `git checkout -b feat/my-feature`
+2. Implement the change with tests
+3. Run `make lint && make test-cov` — both must pass
+4. Submit a PR with:
+   - A clear one-line title (`feat:`, `fix:`, `docs:`, `chore:`)
+   - Description of what changed and why
+   - Link to any related issues
 
-## Adding a New Endpoint
+---
 
-1. Add the route to `app/main.py` with a Pydantic response model
-2. Add corresponding business logic to the appropriate module under `app/`
-3. Write at least 3 tests: happy path, edge case, and error case
-4. Update `README.md` API Reference section
-5. Add a CHANGELOG entry under the next version
+## Commit Message Convention
+
+Use the Angular commit format:
+
+```
+<type>(<scope>): <short description>
+
+Types: feat, fix, refactor, test, docs, chore, perf, ci
+Example: feat(monitoring): add get_station_stats aggregation function
+```
+
+---
 
 ## Reporting Issues
 
 Open a GitHub Issue with:
 - Reproduction steps (minimal code snippet if possible)
 - Expected vs actual behaviour
-- Python version, OS, and dependency versions (`pip freeze`)
+- Python version, OS, and output of `pip show climate-pulse`
