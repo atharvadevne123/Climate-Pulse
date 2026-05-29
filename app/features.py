@@ -134,9 +134,39 @@ class DewiPointTransformer(BaseEstimator, TransformerMixin):
         return X
 
 
+class HeatIndexTransformer(BaseEstimator, TransformerMixin):
+    """Computes the heat index (apparent temperature) via the Rothfusz regression equation.
+
+    Valid for temperature > 26 °C and relative humidity > 40 %. Applied universally
+    here; consumers should interpret below-threshold values as approximate.
+    """
+
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> HeatIndexTransformer:  # noqa: N803
+        """No-op fit — heat index formula is stateless."""
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:  # noqa: N803
+        X = X.copy()
+        if "temperature" in X.columns and "humidity" in X.columns:
+            T = X["temperature"]
+            RH = X["humidity"].clip(0, 100)
+            X["heat_index"] = (
+                -8.78469475556
+                + 1.61139411 * T
+                + 2.33854883889 * RH
+                - 0.14611605 * T * RH
+                - 0.012308094 * T**2
+                - 0.016424828 * RH**2
+                + 0.002211732 * T**2 * RH
+                + 0.00072546 * T * RH**2
+                - 0.000003582 * T**2 * RH**2
+            )
+        return X
+
+
 @lru_cache(maxsize=1)
 def build_feature_pipeline() -> Pipeline:
-    """Return the full 5-stage feature engineering + scaling pipeline.
+    """Return the full 6-stage feature engineering + scaling pipeline.
 
     Cached so repeated calls in training loops return the same object.
     """
@@ -147,6 +177,7 @@ def build_feature_pipeline() -> Pipeline:
             ("atmospheric_ratios", AtmosphericRatioTransformer()),
             ("seasonal_encoding", SeasonalEncodingTransformer()),
             ("dew_point", DewiPointTransformer()),
+            ("heat_index", HeatIndexTransformer()),
             ("scaler", StandardScaler()),
         ]
     )
@@ -170,3 +201,12 @@ def prepare_features(data: dict) -> pd.DataFrame:
     df = pd.DataFrame([row])
     logger.debug("features.prepare_features: shape=%s", df.shape)
     return df
+
+
+def get_feature_names() -> list[str]:
+    """Return the ordered list of raw input feature column names.
+
+    Returns:
+        List of feature name strings as expected by the prediction pipeline.
+    """
+    return list(FEATURE_COLUMNS)
