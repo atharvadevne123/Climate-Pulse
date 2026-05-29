@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.2.0] - 2026-05-29
+
+### Added
+- `HeatIndexTransformer` (Rothfusz regression) added as 6th stage in feature pipeline
+- `/api/v1/model/info` — pipeline stages, input features, is-trained status
+- `/api/v1/stations/{station_id}/stats` — aggregate prediction statistics per station
+- `/api/v1/drift/summary` — drift event counts grouped by feature
+- `/api/v1/cache/stats` — in-memory cache hit rate and size
+- `/api/v1/predictions/purge` — DELETE endpoint to purge old prediction logs
+- `cache_get_or_set()` convenience function with hit/miss tracking
+- `cache_stats()` and `cache_hit_rate()` cache observability functions
+- `get_station_stats()` aggregate summary in monitoring module
+- `get_drift_count_by_feature()` grouping function in monitoring module
+- `purge_old_predictions()` maintenance function in monitoring module
+- `reset_model_cache()` and `is_model_trained()` in model module
+- In-process model bundle cache to avoid repeated joblib.load() on every predict call
+- `percentage_change()`, `format_duration()`, `batch_iter()` utility functions
+- `validate_station_id_format()` and `validate_prediction_output()` validators
+- `get_counter_names()` and `snapshot()` in telemetry module
+- `get_oldest_prediction()` and `get_prediction_count_by_station()` DB helpers
+- Alembic migration 002: composite indexes on station+timestamp and feature+timestamp
+- `benchmark`, `retrain`, `db-migrate` Makefile targets
+- 150+ additional tests across 12 test files
+
+### Fixed
+- Deprecated `datetime.utcnow` in ORM column defaults replaced with lambda `datetime.now(UTC)`
+- Ruff format compliance for all source files
+
 ## [1.1.0] - 2026-05-28
 
 ### Added
