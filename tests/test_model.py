@@ -167,3 +167,35 @@ class TestResetModelCache:
         )
         result = predict(df)
         assert "predicted_temp" in result
+
+
+class TestPredictOutputFields:
+    @pytest.mark.parametrize("field", ["predicted_temp", "predicted_precip", "extreme_event_prob"])
+    def test_output_contains_field(self, field):
+        df = pd.DataFrame(
+            [{"temperature": 18.0, "precipitation": 1.0, "humidity": 55.0, "pressure": 1010.0, "wind_speed": 10.0, "cloud_cover": 20.0, "month": 5.0, "day_of_year": 140.0}]
+        )
+        result = predict(df)
+        assert field in result
+
+    def test_precip_non_negative_extreme_temp(self):
+        df = pd.DataFrame(
+            [{"temperature": 55.0, "precipitation": 0.0, "humidity": 5.0, "pressure": 1020.0, "wind_speed": 0.0, "cloud_cover": 0.0, "month": 7.0, "day_of_year": 200.0}]
+        )
+        result = predict(df)
+        assert result["predicted_precip"] >= 0.0
+
+    def test_extreme_prob_float(self):
+        df = pd.DataFrame(
+            [{"temperature": 20.0, "precipitation": 2.0, "humidity": 60.0, "pressure": 1013.0, "wind_speed": 15.0, "cloud_cover": 30.0, "month": 6.0, "day_of_year": 160.0}]
+        )
+        result = predict(df)
+        assert isinstance(result["extreme_event_prob"], float)
+
+    @pytest.mark.parametrize("month", [1.0, 6.0, 12.0])
+    def test_predict_all_months(self, month):
+        df = pd.DataFrame(
+            [{"temperature": 15.0, "precipitation": 1.0, "humidity": 60.0, "pressure": 1013.0, "wind_speed": 10.0, "cloud_cover": 40.0, "month": month, "day_of_year": 180.0}]
+        )
+        result = predict(df)
+        assert "predicted_temp" in result
