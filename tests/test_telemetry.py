@@ -177,7 +177,8 @@ class TestResetCounters:
 
         record_latency("my_lat", 50.0)
         reset_counters()
-        assert "my_lat" in get_stats()
+        stats = get_stats()
+        assert "my_lat_p50" in stats
 
 
 class TestIncrementBatch:

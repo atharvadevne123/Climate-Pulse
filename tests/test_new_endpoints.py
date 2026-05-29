@@ -166,15 +166,15 @@ class TestDriftSummaryEndpoint:
         resp = client.get("/api/v1/drift/summary")
         assert resp.status_code == 200
 
-    def test_drift_summary_has_total_reports(self, client):
+    def test_drift_summary_has_counts_by_feature(self, client):
         data = client.get("/api/v1/drift/summary").json()
-        assert "total_reports" in data
+        assert "drift_counts_by_feature" in data
 
-    def test_drift_summary_has_drift_detected_count(self, client):
+    def test_drift_summary_counts_is_dict(self, client):
         data = client.get("/api/v1/drift/summary").json()
-        assert "drift_detected_count" in data
+        assert isinstance(data["drift_counts_by_feature"], dict)
 
-    def test_drift_summary_counts_non_negative(self, client):
+    def test_drift_summary_non_negative_values(self, client):
         data = client.get("/api/v1/drift/summary").json()
-        assert data["total_reports"] >= 0
-        assert data["drift_detected_count"] >= 0
+        for v in data["drift_counts_by_feature"].values():
+            assert v >= 0

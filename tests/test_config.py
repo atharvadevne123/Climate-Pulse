@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.config import Settings, get_settings
 
 
@@ -20,7 +22,7 @@ class TestSettings:
 
     def test_app_version(self):
         s = Settings()
-        assert s.app_version == "1.0.0"
+        assert s.app_version == "1.2.0"
 
     def test_get_settings_returns_settings(self):
         s = get_settings()
