@@ -151,3 +151,64 @@ class TestSnapshot:
         increment(metric, 5)
         result = snapshot()
         assert result["counters"].get(metric, 0) >= 5
+
+
+class TestResetCounters:
+    def test_resets_counters_only(self):
+        from app.telemetry import reset_counters
+
+        increment("alpha", 5)
+        record_latency("beta_lat", 10.0)
+        reset_counters()
+        assert get_counter("alpha") == 0
+        # histogram should still be intact
+        stats = get_stats()
+        assert "beta_lat_p50" in stats
+
+    def test_reset_counters_idempotent(self):
+        from app.telemetry import reset_counters
+
+        reset_counters()
+        reset_counters()
+        assert get_stats()["counters"] == {}
+
+    def test_reset_counters_does_not_affect_histograms(self):
+        from app.telemetry import reset_counters
+
+        record_latency("my_lat", 50.0)
+        reset_counters()
+        assert "my_lat" in get_stats()
+
+
+class TestIncrementBatch:
+    def test_increments_multiple_counters(self):
+        from app.telemetry import increment_batch
+
+        increment_batch({"a": 3, "b": 7, "c": 1})
+        assert get_counter("a") == 3
+        assert get_counter("b") == 7
+        assert get_counter("c") == 1
+
+    def test_accumulates_with_existing_values(self):
+        from app.telemetry import increment_batch
+
+        increment("x", 5)
+        increment_batch({"x": 3, "y": 2})
+        assert get_counter("x") == 8
+        assert get_counter("y") == 2
+
+    def test_empty_dict_is_no_op(self):
+        from app.telemetry import increment_batch
+
+        increment("existing", 4)
+        increment_batch({})
+        assert get_counter("existing") == 4
+
+    @pytest.mark.parametrize("n", [1, 5, 10])
+    def test_batch_size_parametrized(self, n):
+        from app.telemetry import increment_batch
+
+        metrics = {f"metric_{i}": i + 1 for i in range(n)}
+        increment_batch(metrics)
+        for name, val in metrics.items():
+            assert get_counter(name) == val
