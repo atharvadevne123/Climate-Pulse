@@ -261,3 +261,21 @@ class TestPredictExtremeInputs:
         for _ in range(5):
             result = predict(self._payload())
             assert result["predicted_precip"] >= 0.0
+
+
+class TestGetMetricsAfterRetrain:
+    def test_metrics_refreshed_after_retrain(self):
+        from app.model import get_metrics, train_models
+
+        train_models()
+        m = get_metrics()
+        assert "model_version" in m
+        assert m["n_features"] > 0
+
+    def test_model_version_is_date_prefixed(self):
+        from app.model import get_metrics
+
+        m = get_metrics()
+        version = m["model_version"]
+        assert isinstance(version, str)
+        assert len(version) >= 8
