@@ -48,3 +48,22 @@ class TestRetrainMetrics:
     def test_retrain_model_version_string(self, client):
         data = client.post("/api/v1/retrain").json()
         assert isinstance(data.get("model_version"), str)
+
+
+class TestRetrainModelFreshness:
+    def test_model_freshness_after_retrain(self, client):
+        client.post("/api/v1/retrain")
+        data = client.get("/api/v1/model/freshness").json()
+        assert data.get("stale_threshold_hours") == 24
+
+    def test_predict_still_works_after_retrain(self, client, sample_weather_payload):
+        client.post("/api/v1/retrain")
+        resp = client.post("/api/v1/predict", json=sample_weather_payload)
+        assert resp.status_code == 200
+        assert "predicted_temp" in resp.json()
+
+    def test_metrics_accessible_after_retrain(self, client):
+        client.post("/api/v1/retrain")
+        resp = client.get("/api/v1/metrics")
+        assert resp.status_code == 200
+        assert resp.json()["n_training_samples"] > 0
