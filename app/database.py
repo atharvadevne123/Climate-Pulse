@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import JSON, Column, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
@@ -43,7 +43,7 @@ class PredictionLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     correlation_id = Column(String, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
     station_id = Column(String, index=True)
     features = Column(JSON)
     predicted_temp = Column(Float)
@@ -56,7 +56,7 @@ class DriftReport(Base):
     __tablename__ = "drift_reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
     feature_name = Column(String, index=True)
     ks_statistic = Column(Float)
     p_value = Column(Float)
@@ -134,3 +134,28 @@ def get_predictions_by_station(db, station_id: str, limit: int = 100) -> list[Pr
         .limit(limit)
         .all()
     )
+
+
+def get_oldest_prediction(db) -> PredictionLog | None:
+    """Return the oldest prediction log record, or None if the table is empty.
+
+    Args:
+        db: Active SQLAlchemy session.
+
+    Returns:
+        Oldest PredictionLog instance, or None.
+    """
+    return db.query(PredictionLog).order_by(PredictionLog.timestamp.asc()).first()
+
+
+def get_prediction_count_by_station(db, station_id: str) -> int:
+    """Return the count of prediction logs for a specific station.
+
+    Args:
+        db: Active SQLAlchemy session.
+        station_id: Station identifier to count predictions for.
+
+    Returns:
+        Integer count.
+    """
+    return db.query(PredictionLog).filter(PredictionLog.station_id == station_id).count()
