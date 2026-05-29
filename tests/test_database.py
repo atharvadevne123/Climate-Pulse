@@ -211,3 +211,72 @@ class TestDatabaseHelpers:
         db.commit()
         result = get_predictions_by_station(db, "LIMIT_STATION", limit=2)
         assert len(result) == 2
+
+
+class TestNewDatabaseHelpers:
+    def test_get_oldest_prediction_empty(self, db):
+        from app.database import get_oldest_prediction
+        assert get_oldest_prediction(db) is None
+
+    def test_get_oldest_prediction_returns_first(self, db):
+        from app.database import get_oldest_prediction
+        from datetime import UTC, datetime, timedelta
+        for i in range(3):
+            db.add(
+                PredictionLog(
+                    correlation_id=f"oldest-{i}",
+                    timestamp=datetime.now(UTC) - timedelta(seconds=10 - i),
+                    station_id="OLD_STATION",
+                    features={},
+                    predicted_temp=float(i),
+                    predicted_precip=0.0,
+                    extreme_event_prob=0.0,
+                    model_version="1.0.0",
+                )
+            )
+        db.commit()
+        result = get_oldest_prediction(db)
+        assert result is not None
+        assert result.correlation_id == "oldest-0"
+
+    def test_get_prediction_count_by_station_zero(self, db):
+        from app.database import get_prediction_count_by_station
+        assert get_prediction_count_by_station(db, "GHOST_STATION") == 0
+
+    def test_get_prediction_count_by_station_counts_correctly(self, db):
+        from app.database import get_prediction_count_by_station
+        for i in range(4):
+            db.add(
+                PredictionLog(
+                    correlation_id=f"cnt-{i}",
+                    timestamp=datetime.now(UTC),
+                    station_id="COUNT_STATION",
+                    features={},
+                    predicted_temp=float(i),
+                    predicted_precip=0.0,
+                    extreme_event_prob=0.0,
+                    model_version="1.0.0",
+                )
+            )
+        db.commit()
+        assert get_prediction_count_by_station(db, "COUNT_STATION") == 4
+
+    @pytest.mark.parametrize("count", [1, 3, 7])
+    def test_get_prediction_count_by_station_parametrized(self, db, count):
+        from app.database import get_prediction_count_by_station
+        station = f"PARAM_ST_{count}"
+        for i in range(count):
+            db.add(
+                PredictionLog(
+                    correlation_id=f"pcount-{count}-{i}",
+                    timestamp=datetime.now(UTC),
+                    station_id=station,
+                    features={},
+                    predicted_temp=float(i),
+                    predicted_precip=0.0,
+                    extreme_event_prob=0.0,
+                    model_version="1.0.0",
+                )
+            )
+        db.commit()
+        assert get_prediction_count_by_station(db, station) == count
